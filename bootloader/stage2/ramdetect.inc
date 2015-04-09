@@ -1,7 +1,8 @@
 detect_ram:
 	mov si, RAM_detect_msg
 	call sprint
-	
+	mov ax, 0x1000
+	mov es, ax
 	mov di, ram_query_buffer
 	mov ebx, 0
 ram_detect_next_entry:
@@ -37,7 +38,8 @@ ram_entry_print_loop:
 	pop ebx
 	jmp ram_detect_next_entry
 ram_detect_done:
-	
+	mov eax, ram_query_buffer
+	mov [0x4000], eax
 	ret
 
 av_RAM_msg: db "Available RAM: ", 0

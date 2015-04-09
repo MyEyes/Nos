@@ -1,10 +1,11 @@
 	[bits 32]
-	[org 0x1000]
+	[org 0x11000]
 	jmp load
 	%include "protected/elf.inc"
 	%include "protected/mem.inc"
 load:
-	mov eax, 0x30000
+	;Set up data segment
+	mov eax, 0x40000
 	call elf_load
 	mov eax, [kernel_entry]
 	jmp eax

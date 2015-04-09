@@ -35,7 +35,7 @@ start:
    mov es, ax	;Set segment
    mov ax, 17
    mov bx, 0x0000
-   mov cx, 16	;Load first 16 sectors
+   mov cx, 128; Load first 128 sectors of kernel (64k)
    
 load_loop:
    push ax
@@ -50,7 +50,6 @@ load_loop:
    add bx, 0x200
    dec cx
    jnz load_loop
-   
    mov bx, 0x0010
    mov ax, [es:bx]
    mov [reg16], ax
@@ -78,15 +77,9 @@ load_loop:
    mov fs, ax
    mov gs, ax
    mov ss, ax
-   	  
-   mov eax, [kernel_entry]
-   jmp 0x08:welive
-
-halt:
-   jmp halt
    
-welive:
-   jmp dword protected_mode_target+2
+   jmp dword 0x8:0x11000 ;Jump to second stage
+halt:
    jmp halt
 
 stage2_msg: db "Welcome to stage 2 of this bootloader", 10, 13, 0

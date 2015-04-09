@@ -8,6 +8,7 @@ floppy_setup:
 	
 	and cl, 0x3f
 	mov [floppy_noh], dh
+	inc word [floppy_noh]
 	mov [floppy_spt], cl
 				
 	mov si, floppy_spt_msg
@@ -37,8 +38,8 @@ floppy_read:
 	and ax, 0x00FF ;Keep only lower bytes of ax
 	mov cl, byte [floppy_noh]	;Load number of heads into cl
 	div cl						;Figure out head and cylinder
-	mov byte [floppy_head], al
-	mov byte [floppy_cylinder], ah 
+	mov byte [floppy_head], ah
+	mov byte [floppy_cylinder], al
 	
 	jmp floppy_read_retry
 	
@@ -63,11 +64,14 @@ floppy_read_error:
 	je floppy_read_exit
 	
 floppy_read_retry:
-	mov cx, word [floppy_cylinder] 	;ch = cylinder & 0xff
-	and cx, 0xFFC0 	;cl =sector | ((cylinder>>2) & 0xC0)
-	mov ax, word [floppy_sector]
-	and ax, 0x003f
-	or  cx, ax						;final cx calculation
+	mov ax, word [floppy_cylinder]
+	and ax, 0xFF
+	mov ch, al 						;ch = cylinder & 0xff
+	mov ax, word [floppy_cylinder]
+	shr ax, 2
+	and ax, 0xC0					;ax = (cylinder>>2) &0xC0
+	mov cl, [floppy_sector]			
+	or cl, al						;cl |= ax
 	mov dh, byte [floppy_head]		;dh=head
 									;bx already set to address
 	mov dl, 0x00					;Assume drive 0
