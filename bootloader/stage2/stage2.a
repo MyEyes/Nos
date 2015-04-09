@@ -1,0 +1,98 @@
+   [bits 16]
+   [org 0x10000]
+   mov ax, 0x1000
+   mov ds, ax
+   mov es, ax
+   mov fs, ax
+   mov gs, ax
+   mov ss, ax
+   mov sp, 0x9000
+
+   jmp start
+
+%include "print.inc"
+%include "ramdetect.inc"
+%include "floppy.inc"
+%include "elf.inc"
+%include "a20.inc"
+%include "protected.inc"
+
+start:
+
+   mov si, stage2_msg
+   call sprint
+ 
+   call print_newline
+   
+   call print_check_a20
+   
+   call floppy_setup
+   
+   call print_newline
+
+;Load kernel into memory
+   mov ax, 0x4000
+   mov es, ax	;Set segment
+   mov ax, 17
+   mov bx, 0x0000
+   mov cx, 16	;Load first 16 sectors
+   
+load_loop:
+   push ax
+   push bx
+   push cx
+   call floppy_read
+   pop cx
+   pop bx
+   pop ax
+   
+   inc ax
+   add bx, 0x200
+   dec cx
+   jnz load_loop
+   
+   mov bx, 0x0010
+   mov ax, [es:bx]
+   mov [reg16], ax
+   call printreg16
+   
+   call print_newline
+   
+   mov ax, 0x0000
+   call elf_load
+   
+   call detect_ram
+   
+   mov si, entering_protected_msg
+   call sprint
+   
+   mov eax, [kernel_entry]
+   mov [reg32], eax
+   call printreg32
+   call print_newline
+   
+   call enter_protected
+   mov ax, 0x10
+   mov ds, ax
+   mov es, ax
+   mov fs, ax
+   mov gs, ax
+   mov ss, ax
+   	  
+   mov eax, [kernel_entry]
+   jmp 0x08:welive
+
+halt:
+   jmp halt
+   
+welive:
+   jmp dword protected_mode_target+2
+   jmp halt
+
+stage2_msg: db "Welcome to stage 2 of this bootloader", 10, 13, 0
+entering_kernel_msg: db "Jumping to kernel at: "
+entering_protected_msg: db "Entering protected mode and loading kernel at", 10, 13, 0
+kernel_entry: dw 0,0
+times 4096-($-$$) db 0
+
+protected_mode_target:

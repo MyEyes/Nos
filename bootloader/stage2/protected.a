@@ -1,0 +1,13 @@
+	[bits 32]
+	[org 0x1000]
+	jmp load
+	%include "protected/elf.inc"
+	%include "protected/mem.inc"
+load:
+	mov eax, 0x30000
+	call elf_load
+	mov eax, [kernel_entry]
+	jmp eax
+hang:
+	jmp hang
+	times 4096-($-$$) db 0
