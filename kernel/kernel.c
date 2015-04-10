@@ -6,23 +6,56 @@
 #include "util/int.h"
 #include "res/gdt.h"
 #include "util/idt.h"
+#include "res/portio.h"
+#include "util/clock.h"
+#include "util/debug.h"
+#include "res/paging.h"
+#include "kernel.h"
+
+void kernel_bootstrap()
+{
+	terminal_initialize();
+	
+	set_meminfo_ptr((meminfo_page_t**)(MEMINFO_LOC));	//Get current RAM info
+	
+	init_gdt();
+	
+	setup_idt();									//Allocate IDT memory and clear table
+	
+	clock_init();									//Initialize system clock
+	
+	load_idt();										//Point IDT and set interrupt table active
+	
+	//Map kernel memory
+	kernel_page_dir = page_dir_create(0);
+	page_dir_create((void*)PAGE_SIZE);
+	page_dir_entry_create(kernel_page_dir->entries, (void*)PAGE_SIZE, PG_RW|PG_Present);
+	
+	for(uint32_t index = 0; index<1024; index++)
+	{
+		map_dir(kernel_page_dir, (void*)(index*PAGE_SIZE), (void*)(index*PAGE_SIZE));
+	}
+	bochs_break();
+	enable_paging(kernel_page_dir);
+}
 
 void kernel_main()
 {
-	terminal_initialize();
-	/* Since there is no support for newlines in terminal_putchar yet, \n will
-	   produce some VGA specific character instead. This is normal. */
+	kernel_bootstrap();
+	
 	terminal_writestring("Hello, kernel World!\n\n");
-	set_meminfo_ptr((meminfo_page_t**)(0x14000));
 	print_meminfo();
 	
 	terminal_writestring("\n");
-	setup_gdt(*(gdt_info_t**)(0x14010));
 	print_gdt_info();
-	setup_idt();
-	load_idt();
-	__asm__("int $0x80");
-	enable_interrupts();
+	
+	terminal_writestring("\n");
+	
+	set_idt_desc(0x09, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8); //Disable keyboard interrupt
+	
+	//enable_interrupts();
+	bochs_break();
+	while(1);
 	halt();
 }
 
@@ -33,9 +66,4 @@ void kernel_panic()
 	disable_interrupts();
 	halt();
 	while(1); //Infinite loop if the halt somehow breaks
-}
-
-void interrupt_happened()
-{
-	terminal_writestring("There was an interrupt!\n");
 }

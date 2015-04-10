@@ -17,3 +17,4 @@ mv nos ../nos.bin
 cd ..
 dd if=bootloader/boot.img of=disk.img >& /dev/null
 dd if=nos.bin of=disk.img seek=17 obs=512
+dd if=/dev/null count=1 of=disk.img seek=2879 obs=512 #should give us a 1.44MB image

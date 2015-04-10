@@ -1,5 +1,10 @@
+#ifndef GDT_H
+#define GDT_H
+
 #include <stdint.h>
 #include <stddef.h>
+
+#define GDT_ENTRY_COUNT 6
 enum  __attribute__((__packed__)) gdt_entry_type
 {
 	Present = 128,
@@ -48,7 +53,7 @@ typedef struct __attribute__((__packed__))
 	gdt_entry_raw_t* entry_ptr;
 } gdt_info_t;
 
-void setup_gdt(gdt_info_t* ptr);
+void set_old_gdt(gdt_info_t* ptr);
 void print_gdt_info();
 
 void gdt_print_entry(gdt_entry_t entry);
@@ -56,3 +61,11 @@ gdt_entry_raw_t gdt_get_raw_entry(uint32_t index);
 
 gdt_entry_t raw_to_gdt_entry(gdt_entry_raw_t entry);
 gdt_entry_raw_t gdt_entry_to_raw(gdt_entry_t entry);
+
+void remap_gdt();
+void set_gdt_entry(uint8_t index, gdt_entry_t entry);
+
+gdt_entry_t construct_gdt_entry(uint32_t base_addr, uint32_t size, enum gdt_entry_type type, enum gdt_flags flags);
+
+void init_gdt();
+#endif

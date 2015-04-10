@@ -1,4 +1,9 @@
+#ifndef IDT_H
+#define IDT_H
+
 #include <stdint.h>
+
+extern void do_nothing_int();
 
 typedef enum
 {
@@ -28,3 +33,4 @@ void set_idt_desc(uint8_t index, uint32_t offset, uint8_t cpulevel, idt_type typ
 void enable_idt();
 void load_idt();
 void setup_idt();
+#endif

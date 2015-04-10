@@ -77,7 +77,6 @@ load_loop:
    mov fs, ax
    mov gs, ax
    mov ss, ax
-   
    jmp dword 0x8:0x11000 ;Jump to second stage
 halt:
    jmp halt

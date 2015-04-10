@@ -2,11 +2,10 @@
 
 idt_desc_t idt_descs[256];
 idt_info_t idt_info __asm__ ("idt_info");
-//idt_info_t *ptr __asm__ ("idt_ptr");
 
 void enable_idt()
 {
-	__asm__  __volatile__ ("xchg %bx, %bx");
+	//__asm__  __volatile__ ("xchg %bx, %bx");
 	//ptr = &idt_info;
 	__asm__  __volatile__ ("lidt idt_info");
 }
@@ -28,13 +27,11 @@ void load_idt()
 	enable_idt();
 }
 
-extern void* do_nothing;
-
 void setup_idt()
 {
 	for(uint16_t x=0; x<256; x++)
 	{
 		set_idt_desc(x, 0, 0, 0, 0);
 	}
-	set_idt_desc(0x80, (uint32_t)&do_nothing, 0, IntGate32, 0x8);
+	set_idt_desc(0x80, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8);
 }

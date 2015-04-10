@@ -1,3 +1,6 @@
+#ifndef TERMINAL_H
+#define TERMINAL_H
+
 #include <stdbool.h> /* C doesn't have booleans by default. */
 #include <stddef.h>
 #include <stdint.h>
@@ -34,3 +37,4 @@ void terminal_writeuint32(const uint32_t data);
 void terminal_writeuint64(const uint64_t data);
 uint16_t make_vgaentry(char c, uint8_t color);
 uint8_t make_color(enum vga_color fg, enum vga_color bg);
+#endif
