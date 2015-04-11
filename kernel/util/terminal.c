@@ -1,4 +1,5 @@
 #include "terminal.h"
+#include "../res/kalloc.h"
 
 uint8_t make_color(enum vga_color fg, enum vga_color bg)
 {
@@ -25,7 +26,7 @@ void terminal_initialize()
 	terminal_row = 0;
 	terminal_column = 0;
 	terminal_color = make_color(COLOR_LIGHT_GREY, COLOR_BLACK);
-	terminal_buffer = (uint16_t*) 0xB8000;
+	terminal_buffer = (uint16_t*) 0xB8000;//kalloc_reqDMA((void*)0xB8000, 0x1000);//0xB8000;
 	for ( size_t y = 0; y < VGA_HEIGHT; y++ )
 	{
 		for ( size_t x = 0; x < VGA_WIDTH; x++ )

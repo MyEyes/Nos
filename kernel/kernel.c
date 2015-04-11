@@ -10,6 +10,7 @@
 #include "util/clock.h"
 #include "util/debug.h"
 #include "res/paging.h"
+#include "res/kalloc.h"
 #include "kernel.h"
 
 void kernel_bootstrap()
@@ -26,21 +27,8 @@ void kernel_bootstrap()
 	
 	load_idt();										//Point IDT and set interrupt table active
 	
-	//Map kernel memory
-	kernel_page_dir = page_dir_create(KMEM_PG_DIR_LOC);
-	page_dir_create((void*)PAGE_SIZE);
-	//page_dir_entry_create(kernel_page_dir->entries, (void*)(KMEM_PG_TABLE_LOC), PG_RW|PG_Present);
-	//page_dir_entry_create(kernel_page_dir->entries+1, (void*)(KMEM_PG_TABLE_LOC+PAGE_SIZE), PG_RW|PG_Present);
-	//map_dir(kernel_page_dir, (void*)(0), (void*)(0));
-	//map_dir(kernel_page_dir, (void*)(KMEM_PG_TABLE_LOC), (void*)(KMEM_PG_TABLE_LOC));
+	init_kernel_paging();
 	
-	for(uint32_t index = 0; index<2047; index++)
-	{
-		map_dir(kernel_page_dir, (void*)(index*PAGE_SIZE), (void*)(index*PAGE_SIZE));
-	}
-	
-	enable_paging(kernel_page_dir);
-	bochs_break();
 }
 
 void kernel_main()
@@ -57,6 +45,16 @@ void kernel_main()
 	
 	set_idt_desc(0x09, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8); //Disable keyboard interrupt
 	
+	kalloc_vmem_add((void*)KMEM_KERN_RESERVED_LIMIT, 0x100000); //1MB
+	char* test = (char*)kalloc_reqDMA((void*)0xB8000,0x1000);
+	terminal_writeuint32((uint32_t)test);
+	terminal_writestring("\n");
+	kalloc_print_vmem_info();
+	test[800+1] = 'A';
+	test[800+3] = 'B';
+	test[800+5] = 'C';
+	kfree(test);
+	kalloc_print_vmem_info();
 	//enable_interrupts();
 	bochs_break();
 	while(1);

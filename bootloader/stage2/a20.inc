@@ -57,4 +57,14 @@ check_a20__exit:
  
     ret
 	
+set_a20:
+	in al, 0x92
+	test al, 2
+	jnz after
+	or al, 2
+	and al, 0xFE
+	out 0x92, al
+after:
+	ret
+	
 a20_enabled: db "A20 is enabled",10,13, 0

@@ -26,6 +26,8 @@ start:
    
    call print_check_a20
    
+   call set_a20
+   
    call floppy_setup
    
    call print_newline

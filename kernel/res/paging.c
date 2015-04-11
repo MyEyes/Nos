@@ -3,6 +3,8 @@
 #include "../util/terminal.h"
 #include <stdint.h>
 #include "../kernel.h"
+#include "meminfo.h"
+#include "../util/debug.h"
 
 page_dir_t* kernel_page_dir;
 
@@ -64,7 +66,6 @@ void map_tbl(page_table_t* tbl, void* v_addr, void* p_addr)
 	uint32_t i_addr = (uint32_t)tbl->entries[iv_te].address;
 	if(i_addr&PG_Present)
 	{
-		/*
 		terminal_writestring("Remapping vAddr: ");
 		terminal_writeuint32((uint32_t)PAGE_ENTRY_TO_PTR(v_addr));
 		terminal_writestring("from: ");
@@ -72,7 +73,6 @@ void map_tbl(page_table_t* tbl, void* v_addr, void* p_addr)
 		terminal_writestring("to: ");
 		terminal_writeuint32((uint32_t)PAGE_ENTRY_TO_PTR(p_addr));
 		terminal_writestring("\n");
-		*/
 	}
 	page_table_entry_create((tbl->entries+iv_te), p_addr, PG_Present | PG_RW);
 }
@@ -84,4 +84,35 @@ void enable_paging(page_dir_t* dir)
 			"movl %%cr0, %%eax\n\t"
 			"orl $0x80000000, %%eax\n\t"
 			"movl %%eax, %%cr0\n\t": : "dN" (dir): "eax", "memory");
+}
+
+void init_kernel_paging()
+{
+	//Map kernel memory
+	kernel_page_dir = page_dir_create(KMEM_PG_DIR_LOC);
+	page_dir_create((void*)PAGE_SIZE);
+	
+	//Go through meminfo to find avaiable RAM regions
+	for(uint32_t index = 0; index<100; index++)
+	{
+		meminfo_page_t* page;
+		if((page = get_free_meminfo_page(index)))
+		{
+			print_meminfo_page(page);
+			for(uint32_t addr = page->base_addr;
+			addr+PAGE_SIZE <= page->base_addr+page->reg_length && addr+PAGE_SIZE<=KMEM_PG_TABLE_LIMIT;
+			addr+=PAGE_SIZE)
+			{
+				map_dir(kernel_page_dir, (void*)addr, (void*)addr);
+			}
+		}
+		else
+			break;
+	}
+	
+	//Map address of terminal buffer for debugging.
+	map_dir(kernel_page_dir, (void*)0xB8000, (void*)0xB8000);
+	
+	enable_paging(kernel_page_dir);
+	bochs_break();
 }

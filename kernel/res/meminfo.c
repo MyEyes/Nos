@@ -20,11 +20,48 @@ void print_mem_type(uint32_t val)
 		default: terminal_writestring("         "); break;
 	}
 }
+/*
+void add_mem_page(meminfo_page_t* page)
+{
+	
+}
+
+void add_mem(uint32_t base_addr, uint32_t size)
+{
+	
+}
+*/
 
 void print_acpi_ext(uint32_t val)
 {
 	terminal_writeuint32(val);
 	terminal_writestring("\n");
+}
+
+meminfo_page_t* get_free_meminfo_page(uint8_t index)
+{
+	if(meminfo_store==0)
+		return 0;
+	meminfo_page_t* currentPage = meminfo_store;
+	while(currentPage->reg_length>0)
+	{		
+		if(currentPage->reg_type == 1)
+		{
+			if(index--==0)
+				return currentPage;
+		}
+		currentPage+=1;
+	}
+	return 0;
+}
+
+void print_meminfo_page(meminfo_page_t* page)
+{
+		size_t* currval= (size_t*) page;
+		terminal_writeuint64(currval[0]);
+		terminal_writeuint64(currval[2]);
+		print_mem_type(page->reg_type);
+		print_acpi_ext(page->acpi_ext);	
 }
 
 void print_meminfo()
@@ -35,12 +72,8 @@ void print_meminfo()
 	terminal_writestring("--------------------Memory  Info-------------------\n");
 	terminal_writestring("Base Addr        Segment Length   Type     ACPI_EXT\n");
 	while(currentPage->reg_length>0)
-	{		
-		size_t* currval= (size_t*) currentPage;
-		terminal_writeuint64(currval[0]);
-		terminal_writeuint64(currval[2]);
-		print_mem_type(currentPage->reg_type);
-		print_acpi_ext(currentPage->acpi_ext);
+	{	
+		print_meminfo_page(currentPage);
 		currentPage+=1;
 	}
 }
