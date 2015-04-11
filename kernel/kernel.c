@@ -27,16 +27,20 @@ void kernel_bootstrap()
 	load_idt();										//Point IDT and set interrupt table active
 	
 	//Map kernel memory
-	kernel_page_dir = page_dir_create(0);
+	kernel_page_dir = page_dir_create(KMEM_PG_DIR_LOC);
 	page_dir_create((void*)PAGE_SIZE);
-	page_dir_entry_create(kernel_page_dir->entries, (void*)PAGE_SIZE, PG_RW|PG_Present);
+	//page_dir_entry_create(kernel_page_dir->entries, (void*)(KMEM_PG_TABLE_LOC), PG_RW|PG_Present);
+	//page_dir_entry_create(kernel_page_dir->entries+1, (void*)(KMEM_PG_TABLE_LOC+PAGE_SIZE), PG_RW|PG_Present);
+	//map_dir(kernel_page_dir, (void*)(0), (void*)(0));
+	//map_dir(kernel_page_dir, (void*)(KMEM_PG_TABLE_LOC), (void*)(KMEM_PG_TABLE_LOC));
 	
-	for(uint32_t index = 0; index<1024; index++)
+	for(uint32_t index = 0; index<2047; index++)
 	{
 		map_dir(kernel_page_dir, (void*)(index*PAGE_SIZE), (void*)(index*PAGE_SIZE));
 	}
-	bochs_break();
+	
 	enable_paging(kernel_page_dir);
+	bochs_break();
 }
 
 void kernel_main()

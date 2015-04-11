@@ -2,6 +2,7 @@
 #include "mem.h"
 #include "../util/terminal.h"
 #include <stdint.h>
+#include "../kernel.h"
 
 page_dir_t* kernel_page_dir;
 
@@ -46,30 +47,32 @@ void map_dir(page_dir_t* dir, void* v_addr, void* p_addr)
 	uint32_t i_tbl = (uint32_t)dir->entries[iv_te].table;
 	if(!(i_tbl&PG_Present))			//If page table doesn't exist
 	{
-		terminal_writestring("No table for vAddr: ");
-		terminal_writeuint32(((uint32_t)v_addr)&0xFFFFF000);
-		//TODO allocate memory for new page
+		//Create table entry in reserved region
+		terminal_writestring("Creating table at: ");
+		terminal_writeuint32((uint32_t)(KMEM_PG_TABLE_LOC+iv_te*PAGE_SIZE));
+		terminal_writestring("\n");
+		page_dir_entry_create(dir->entries+iv_te, (void*)(KMEM_PG_TABLE_LOC+iv_te*PAGE_SIZE), PG_RW|PG_Present);
+		i_tbl = (uint32_t)dir->entries[iv_te].table;
 	}
-	else
-	{
-		map_tbl((page_table_t*)(i_tbl&0xFFFFF000), v_addr, p_addr);
-	}
+	map_tbl(PAGE_ENTRY_TO_PTR(i_tbl), v_addr, p_addr);
 }
 
 void map_tbl(page_table_t* tbl, void* v_addr, void* p_addr)
 {
 	uint32_t iv_addr = (uint32_t) v_addr;
-	uint16_t iv_te = (iv_addr >> 12)&0xFFF;		//Lower 10 bits of upper 20bits
+	uint16_t iv_te = (iv_addr >> 12)&0x3FF;		//Lower 10 bits of upper 20bits
 	uint32_t i_addr = (uint32_t)tbl->entries[iv_te].address;
 	if(i_addr&PG_Present)
 	{
+		/*
 		terminal_writestring("Remapping vAddr: ");
-		terminal_writeuint32(((uint32_t)v_addr)&0xFFFFF000);
+		terminal_writeuint32((uint32_t)PAGE_ENTRY_TO_PTR(v_addr));
 		terminal_writestring("from: ");
-		terminal_writeuint32(i_addr&0xFFFFF000);
+		terminal_writeuint32((uint32_t)PAGE_ENTRY_TO_PTR(i_addr));
 		terminal_writestring("to: ");
-		terminal_writeuint32(((uint32_t)p_addr)&0xFFFFF000);
+		terminal_writeuint32((uint32_t)PAGE_ENTRY_TO_PTR(p_addr));
 		terminal_writestring("\n");
+		*/
 	}
 	page_table_entry_create((tbl->entries+iv_te), p_addr, PG_Present | PG_RW);
 }

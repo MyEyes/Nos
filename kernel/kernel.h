@@ -2,5 +2,9 @@
 #define KERNEL_H
 
 #define MEMINFO_LOC 0x14000
+#define KMEM_PG_DIR_LOC 0x0	//First thing in RAM
+#define KMEM_KERN_RESERVED_LOC 0x10000 //1MB
+#define KMEM_KERN_RESERVED_SIZE 0x20000 //3MB
+#define KMEM_PG_TABLE_LOC 0x400000 //4MB
 
 #endif

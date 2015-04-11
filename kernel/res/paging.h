@@ -2,6 +2,7 @@
 #define PAGING_H
 
 #define PAGE_SIZE 4096
+#define PAGE_ENTRY_TO_PTR(ent) ((void*)(((uint32_t)ent)&0xFFFFF000))
 
 typedef enum
 {
@@ -52,5 +53,7 @@ void enable_paging(page_dir_t* table);
 void map_dir(page_dir_t* dir, void* v_addr, void* p_addr);
 
 void map_tbl(page_table_t* tbl, void* v_addr, void* p_addr);
+
+void init_kernel_paging();
 
 #endif
