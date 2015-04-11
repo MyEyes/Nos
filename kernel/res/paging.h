@@ -39,7 +39,6 @@ typedef struct
 
 extern page_dir_t* kernel_page_dir;
 
-
 page_table_t* page_table_create(void* addr);
 
 page_dir_t* page_dir_create(void* addr);

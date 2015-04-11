@@ -7,5 +7,4 @@
 #define PIC_SLAVE_DAT 0xA1
 
 void remap_pic();
-
 #endif

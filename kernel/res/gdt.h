@@ -5,26 +5,30 @@
 #include <stddef.h>
 
 #define GDT_ENTRY_COUNT 6
+#define GDT_KERNEL_CODE_SEG 0x08
+#define GDT_KERNEL_DATA_SEG 0x10
+#define GDT_KERNEL_TSS_SEG 0x18
+
 enum  __attribute__((__packed__)) gdt_entry_type
 {
-	Present = 128,
-	DPL1 = 64,
-	DPL2 = 32,
-	Sys = 16,
-	Code = 8,
-	Conforming =4,
-	ExpDown = 4,
-	RW = 2,
-	ACC = 1
+	GDT_Present = 128,
+	GDT_DPL1 = 64,
+	GDT_DPL2 = 32,
+	GDT_Sys = 16,
+	GDT_Code = 8,
+	GDT_Conforming =4,
+	GDT_ExpDown = 4,
+	GDT_RW = 2,
+	GDT_ACC = 1
 };
 
 enum __attribute__((__packed__)) gdt_flags
 {
-	BigPages = 128,
-	Bit32 = 64,
-	GrowDown = 64,
-	Reserved = 32,
-	AVL = 16
+	GDT_BigPages = 128,
+	GDT_Bit32 = 64,
+	GDT_GrowDown = 64,
+	GDT_Reserved = 32,
+	GDT_AVL = 16
 };
 
 typedef struct

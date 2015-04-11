@@ -12,6 +12,7 @@
 #include "res/paging.h"
 #include "res/kalloc.h"
 #include "util/pic.h"
+#include "res/tss.h"
 #include "kernel.h"
 
 void kernel_bootstrap()
@@ -20,11 +21,14 @@ void kernel_bootstrap()
 	
 	init_gdt();										//Set up our own GDT
 	
+	
 	init_kernel_paging();							//Initialize paging
 	
 	kalloc_vmem_add((void*)KMEM_KERN_RESERVED_LIMIT, 0x100000); //1MB
 	
 	terminal_initialize();
+	
+	init_kernel_tss();
 	
 	setup_idt();									//Allocate IDT memory and clear table
 	
@@ -47,9 +51,11 @@ void kernel_main()
 	
 	terminal_writestring("\n");
 	
-	set_idt_desc(IRQ_OFFSET+0x09, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8); //Disable keyboard interrupt
+	set_idt_desc(IRQ_OFFSET+0x01, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8); //Disable keyboard interrupt
 
 	enable_interrupts();
+	
+	load_tss(0x18);
 	
 	bochs_break();
 	

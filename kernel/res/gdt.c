@@ -1,6 +1,8 @@
 #include "gdt.h"
 #include "../util/terminal.h"
 #include "mem.h"
+#include "../kernel.h"
+#include "tss.h"
 
 gdt_info_t gdt_info __asm__("gdt_info");
 gdt_info_t* gdt_info_ptr;
@@ -38,10 +40,11 @@ gdt_entry_t construct_gdt_entry(uint32_t base_addr, uint32_t size, enum gdt_entr
 
 void init_gdt()
 {
-	memzero((void*)gdt_entries, sizeof(gdt_entry_raw_t)*GDT_ENTRY_COUNT);
+	memzero((void*)gdt_entries, sizeof(gdt_entry_raw_t)*GDT_ENTRY_COUNT-1);
 	set_gdt_entry(0, construct_gdt_entry(0,0, 0, 0));
-	set_gdt_entry(1, construct_gdt_entry(0,0xFFFFFFF, Present|Code|Sys|RW, BigPages|Bit32));
-	set_gdt_entry(2, construct_gdt_entry(0,0xFFFFFFF, Present|Sys|RW, BigPages|Bit32));
+	set_gdt_entry(GDT_KERNEL_CODE_SEG/8, construct_gdt_entry(0,0xFFFFFFF, GDT_Present|GDT_Code|GDT_Sys|GDT_RW, GDT_BigPages|GDT_Bit32));
+	set_gdt_entry(GDT_KERNEL_DATA_SEG/8, construct_gdt_entry(0,0xFFFFFFF, GDT_Present|GDT_Sys|GDT_RW, GDT_BigPages|GDT_Bit32));
+	set_gdt_entry(GDT_KERNEL_TSS_SEG/8, construct_gdt_entry(KMEM_TSS_LOC,sizeof(tss_entry_t), GDT_Present|GDT_Code|GDT_ACC, GDT_BigPages|GDT_Bit32));
 	remap_gdt();
 }
 
