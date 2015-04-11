@@ -17,7 +17,7 @@ void clock_init()
 	uint16_t reload_value = 0x1000;
 	
 	//Set up IRQ0 interrupt handler
-	set_idt_desc(0x08, (uint32_t)&IRQ0_handler, 0, IntGate32, 0x8);
+	set_idt_desc(IRQ_OFFSET+0x00, (uint32_t)&IRQ0_handler, 0, IntGate32, 0x8);
 	outb(0x43, 0b00110100); //Channel 0, lobyte/hibyte, rate generator
 	outb(0x40, reload_value&0xFF);
 	outb(0x40, (reload_value>>8)&0xFF);

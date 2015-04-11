@@ -36,6 +36,7 @@ debug: action=ignore
 info: action=report
 error: action=report
 panic: action=ask
+magic_break: enabled=1
 keyboard: type=mf, serial_delay=250, paste_delay=100000, user_shortcut=none
 mouse: type=ps2, enabled=0, toggle=ctrl+mbutton
 sound: driver="default", waveout=none, wavein=none

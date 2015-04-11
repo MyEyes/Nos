@@ -1,12 +1,10 @@
 #include "idt.h"
 
-idt_desc_t idt_descs[256];
-idt_info_t idt_info __asm__ ("idt_info");
+idt_desc_t idt_descs[256];					//Interrupt descriptor table
+idt_info_t idt_info __asm__ ("idt_info");	//Interrupt table info
 
 void enable_idt()
 {
-	//__asm__  __volatile__ ("xchg %bx, %bx");
-	//ptr = &idt_info;
 	__asm__  __volatile__ ("lidt idt_info");
 }
 

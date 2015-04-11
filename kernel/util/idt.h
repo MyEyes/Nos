@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+#define IRQ_OFFSET 0x20
+#define FREE_IRQ_START IRQ_OFFSET+0x10
+
 extern void do_nothing_int();
 
 typedef enum

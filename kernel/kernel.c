@@ -11,6 +11,7 @@
 #include "util/debug.h"
 #include "res/paging.h"
 #include "res/kalloc.h"
+#include "util/pic.h"
 #include "kernel.h"
 
 void kernel_bootstrap()
@@ -30,6 +31,8 @@ void kernel_bootstrap()
 	clock_init();									//Initialize system clock
 	
 	load_idt();										//Point IDT and set interrupt table active
+	
+	remap_pic();
 }
 
 void kernel_main()
@@ -44,10 +47,14 @@ void kernel_main()
 	
 	terminal_writestring("\n");
 	
-	set_idt_desc(0x09, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8); //Disable keyboard interrupt
+	set_idt_desc(IRQ_OFFSET+0x09, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8); //Disable keyboard interrupt
 
-	//enable_interrupts();
+	enable_interrupts();
+	
 	bochs_break();
+	
+	terminal_writeuint64(clock_get_time());
+	
 	while(1);
 	halt();
 }
