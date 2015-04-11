@@ -3,6 +3,23 @@
 
 #include <stdint.h>
 
+#define DIV_ERROR 0x0
+#define SS_DEBUG_EXC 0x1
+#define NMI 0x2
+#define BRK 0x3
+#define OVERFLOW 0x4
+#define BOUND_EXC 0x5
+#define INV_OP_EXC 0x6
+#define NO_COPROC_EXC 0x7
+#define DOUBLE_FAULT 0x8
+#define COPROC_SEG_OVR_EXC 0x9
+#define INVALID_TSS_EXC 0xA 
+#define SEGFAULT 0xB
+#define STACK_EXC 0xC
+#define GENERAL_PROT_FAULT 0xD
+#define PAGEFAULT 0xE
+#define COPROC_ERR 0x10
+
 #define IRQ_OFFSET 0x20
 #define FREE_IRQ_START IRQ_OFFSET+0x10
 
