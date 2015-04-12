@@ -2,10 +2,24 @@
 #define TASK_H
 #include <stdint.h>
 
+typedef enum
+{
+	TSK_Running,
+	TSK_Waiting,
+	TSK_Paused
+} task_state;
+
 typedef struct
 {
 	uint32_t esp;
 	uint8_t level;
+	
+	task_state state;
+	
+	uint64_t priority;
+	int8_t priority_mod;
+	
+	int64_t time_slice;
 	void (*entry)();
 } task_t;
 
@@ -32,7 +46,8 @@ typedef struct
 } __attribute__((packed)) task_context_t;
 
 void call_user(task_t* task);
-task_t* create_task(void (*entry)(), uint16_t ss, uint16_t cs, uint16_t ds);
-void call_task(task_t* task);
-void switch_task(task_t* oldtask, task_t* newtask);
+task_t* create_user_task(void (*entry)(), int8_t priority);
+task_t* create_task(void (*entry)(), uint16_t ss, uint16_t cs, uint16_t ds, int8_t priority);
+__attribute__((noreturn)) void call_task(task_t* task);
+__attribute__((noreturn)) void switch_task(task_t* oldtask, task_t* newtask);
 #endif

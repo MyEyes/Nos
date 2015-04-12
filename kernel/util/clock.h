@@ -4,4 +4,5 @@
 
 void clock_init();
 uint64_t clock_get_time();
+uint64_t clock_time_diff();
 #endif

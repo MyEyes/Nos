@@ -17,16 +17,6 @@
 #include "res/scheduler.h"
 #include "kernel.h"
 
-extern uint16_t* terminal_buffer;
-void user_test1()
-{
-	 while(1) {*((char*)terminal_buffer) = '1';}
-}
-
-void user_test2()
-{
-	while(1) {*((char*)terminal_buffer) = '2';}
-}
 
 void kernel_bootstrap()
 {	
@@ -70,19 +60,17 @@ void kernel_run()
 	
 	//terminal_writeuint64(clock_get_time());
 	
-	task_t* test_task1 = create_task(user_test1, 0x2B, 0x23, 0x2B);
-	task_t* test_task2 = create_task(user_test2, 0x2B, 0x23, 0x2B);
+	//task_t* test_task1 = create_user_task(user_test1, 1);
+	//task_t* test_task2 = create_user_task(user_test2, -4);
 	
 	bochs_break();
-	
-	init_scheduler();
 	
 	enable_interrupts();
 		
 	load_tss(GDT_USER_TSS_SEG+3);
 	
-	schd_task_add(test_task2);
-	scheduler_spawn(test_task1);
+	//schd_task_add(test_task2);
+	//scheduler_spawn(test_task1);
 	
 	//scheduler_spawn(test_task);
 	//call_user(test_task);
@@ -99,7 +87,11 @@ void kernel_main()
 	kernel_bootstrap();
 	
 	//load_tss(GDT_KERNEL_TSS_SEG);
-	task_t* kernel_task = create_task(kernel_run, 0x10, 0x8, 0x10);
+	task_t* kernel_task = create_task(kernel_run, 0x10, 0x8, 0x10, 0);
+	kernel_task->time_slice = 0xFFFF00000000;
+	
+	init_scheduler();
+	
 	scheduler_spawn(kernel_task);
 }
 

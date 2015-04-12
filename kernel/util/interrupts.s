@@ -23,12 +23,20 @@ IRQ0_handler:
 
 .global INT40h_handler
 INT40h_handler:
-	push $0xABABABAB
-	push $0xEFEFEFEF
+	cli
 	call int40h
-	add $8, %esp
 	movb $0x20, %al
 	outb %al, $0x20
+	sti
+	iret
+	
+.global INT41h_handler
+INT41h_handler:
+	cli
+	call int41h
+	movb $0x20, %al
+	outb %al, $0x20
+	sti
 	iret
 	
 .global schedule_handler
@@ -37,6 +45,12 @@ schedule_handler:
 	cli
 	pusha
 	pushf
+	movl (clock_fractions), %eax
+	movl (clock_ms), %ebx
+	addl %eax, (system_timer_fractions)
+	adcl %ebx, (system_timer_ms)
+	addl %eax, (diff_timer_fractions)
+	adcl %ebx, (diff_timer_ms)
 	
 	call schedule
 	movl (schedule_switch_flag), %eax		//Figure out if we want to switch context
@@ -64,7 +78,6 @@ schedule_no_switch:
 	popf
 	popa
 	sti
-	
 	iret
 	
 .global kernel_panic_handler

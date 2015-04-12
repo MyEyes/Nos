@@ -3,11 +3,14 @@
 #include "idt.h"
 #include "../res/portio.h"
 
-uint32_t clock_fractions;
-uint32_t clock_ms;
+volatile uint32_t clock_fractions;
+volatile uint32_t clock_ms;
 
-uint32_t system_timer_ms;
-uint32_t system_timer_fractions;
+volatile uint32_t system_timer_ms;
+volatile uint32_t system_timer_fractions;
+
+volatile uint32_t diff_timer_ms;
+volatile uint32_t diff_timer_fractions;
 
 extern void IRQ0_handler();
 
@@ -26,6 +29,16 @@ void clock_init()
 	clock_ms = (clock_time>>32) & 0xFFFFFFFF;
 	system_timer_ms = 0;
 	system_timer_fractions = 0;
+}
+
+uint64_t clock_time_diff()
+{
+	uint64_t val = diff_timer_ms & 0xFFFFFFFF;
+	val <<= 32;
+	val |= diff_timer_fractions & 0xFFFFFFFF;
+	diff_timer_ms = 0;
+	diff_timer_fractions = 0;
+	return val;
 }
 
 uint64_t clock_get_time()

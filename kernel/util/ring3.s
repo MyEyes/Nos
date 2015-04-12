@@ -33,6 +33,7 @@ create_kernel_context:
 .global switch_context
 switch_context:
 	
+	//xchg %bx, %bx
 	//Push state on stack
 	push %eax
 	push %ecx
@@ -53,6 +54,7 @@ switch_context:
 	movl %esp, (%eax)
 switch_context_no_store:
 	movl (target_stack), %eax
+	xchg %bx, %bx
 	movl %eax, %esp	//Load new stack location from eax into esp
 	
 	//Pop state from new stack
@@ -68,7 +70,8 @@ switch_context_no_store:
 	pop %edx
 	pop %ecx
 	pop %eax
-	
+		
+	xchg %bx, %bx
 	iret
 
 .global switch_context_nolevel
@@ -87,6 +90,8 @@ switch_context_nolevel:
 	push %fs
 	push %gs
 	
+	
+	xchg %bx, %bx
 	//Somehow needs to store esp for switching back
 	movl (old_stack), %eax
 	cmp $0, %eax
@@ -98,7 +103,6 @@ switch_context_nolevel_no_store:
 	
 	//Copy return address stuff down 8 bytes because
 	//iret won't read our ss:esp
-	xchg %bx, %bx
 	movl 13*4(%esp), %eax
 	movl %eax, 15*4(%esp)
 	movl 12*4(%esp), %eax
@@ -120,6 +124,122 @@ switch_context_nolevel_no_store:
 	pop %eax
 	
 	add $2*4, %esp
-	
+	xchg %bx, %bx
 	iret
+
+.global no_switch
+no_switch:
+	push %eax
+	movl 3*4(%esp), %eax
+	movl %eax, 5*4(%esp)
+	movl 2*4(%esp), %eax
+	movl %eax, 4*4(%esp)
+	movl 1*4(%esp), %eax
+	movl %eax, 3*4(%esp)
+	pop %eax
+	add  $2*4, %esp
+	iret
+	
+.global yield_control
+yield_control:
+	xchg %bx, %bx
+	sub $12, %esp	//offset esp so we can store stuff further up the stack
+	push %eax
+	push %edx
+	push %ecx
+	push %ebx
+	movl curr_task, %eax
+	movl next_task, %edx
+	movl $0x0,0xc(%eax)
+	movl $0x0,0x10(%eax)
+	movl 0x10(%edx),%ebx
+	movl 0xc(%edx),%ecx
+	movl $0x1,0x8(%eax)
+	movl $0x0,0x8(%edx)
+	movl %eax,old_task
+	movl %edx,curr_task
+	movl %eax, 20(%esp)
+	movl %edx, 24(%esp)
+	//Expected parameters of switch task
+	pop %ebx
+	pop %ecx
+	pop %edx
+	pop %eax
+	jmp   switch_task
+
+.global switch_task
+switch_task:
+	//can't regcall because we need to preserve task state
+	
+	add $4, %esp		//Get rid of return address
+	
+	//Two parameters on stack
+	
+	//xchg %bx, %bx
+	push %eax
+	push %edx
+	push %ecx
+	push %ebx
+	//eax is old task
+	//edx is new task
+	movl 16(%esp), %eax
+	movl 20(%esp), %edx
+	movl (%eax), %ebx	//Store oldtask->esp in ebx
+	movl (%edx), %ecx	//Store newtask->esp in ecx
+	
+	//Set up memory for switch
+	movl %eax, old_stack		//&old_task->esp
+	movl %ecx, target_stack		//new_task->esp
+	cmp %ebx, %ecx
+	jne do_switch		//If they are the same get out of here
+	pop %ebx			//Pop values back
+	pop %ecx
+	pop %edx
+	pop %eax
+	add $8, %esp		//Remove the two parameters from the stack
+	xchg %bx, %bx
+	jmp no_switch
+do_switch:
+	//Determine if we need to switch CPU rings
+	movl 4(%eax), %ebx	//Store oldtask->level in ebx
+	movl 4(%edx), %ecx	//Store newtask->level in ecx
+	and $3, %ebx
+	and $3, %ecx		//Only interested in last 2 bits
+	cmp %ebx, %ecx		
+	jne do_level_switch
+	pop %ebx			//Pop values back
+	pop %ecx
+	pop %edx
+	pop %eax
+	add $8, %esp		//Remove the two parameters from the stack
+	xchg %bx, %bx
+	jmp switch_context_nolevel
+do_level_switch:
+	pop %ebx			//Pop values back
+	pop %ecx
+	pop %edx
+	pop %eax
+	add $8, %esp		//Remove the two parameters from the stack
+	xchg %bx, %bx
+	jmp switch_context
+
+.global call_task
+call_task:
+	//One parameter on stack
+	add $4, %esp		//Get rid of return address
+	push %eax
+	push %ecx
+	
+	movl 8(%esp), %eax
+	movl (%eax), %ecx	//Store newtask->esp in ecx
+	
+	//Set up memory for switch
+	movl $0, old_stack
+	movl %ecx, target_stack		//new_task->esp
+	
+	pop %ecx
+	pop %eax
+	add $4, %esp		//Pop values back and rem parameter from stack
+	
+	jmp switch_context
 	

@@ -12,7 +12,7 @@ struct task_list_st
 	task_list_t* next;
 };
 
-void scheduler_spawn(task_t* task);
+__attribute__((noreturn)) void scheduler_spawn(task_t* task);
 void schd_task_add(task_t* task);
 void schd_task_del(task_t* task);
 void init_scheduler();
