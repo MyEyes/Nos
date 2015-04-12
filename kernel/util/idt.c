@@ -1,5 +1,6 @@
 #include "idt.h"
-
+#include "terminal.h"
+#include "debug.h"
 idt_desc_t idt_descs[256];					//Interrupt descriptor table
 idt_info_t idt_info __asm__ ("idt_info");	//Interrupt table info
 
@@ -25,11 +26,32 @@ void load_idt()
 	enable_idt();
 }
 
+extern void* kernel_panic_handler;
+
+extern void* INT40h_handler;
+
+void int40h(uint32_t a, uint32_t b)
+{
+	terminal_writeuint32(a);
+	terminal_writeuint32(b);
+	terminal_writestring("\n");
+	bochs_break();
+}
+
+
 void setup_idt()
 {
 	for(uint16_t x=0; x<256; x++)
 	{
 		set_idt_desc(x, 0, 0, 0, 0);
 	}
+	
 	set_idt_desc(0x80, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8);
+	set_idt_desc(0x40, (uint32_t)&INT40h_handler, 3, IntGate32, 0x8);
+	
+	set_idt_desc(SS_DEBUG_EXC, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8);
+	
+	set_idt_desc(DOUBLE_FAULT, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
+	set_idt_desc(SEGFAULT, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
+	set_idt_desc(PAGEFAULT, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
 }

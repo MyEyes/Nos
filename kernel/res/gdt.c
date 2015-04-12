@@ -45,6 +45,10 @@ void init_gdt()
 	set_gdt_entry(GDT_KERNEL_CODE_SEG/8, construct_gdt_entry(0,0xFFFFFFF, GDT_Present|GDT_Code|GDT_Sys|GDT_RW, GDT_BigPages|GDT_Bit32));
 	set_gdt_entry(GDT_KERNEL_DATA_SEG/8, construct_gdt_entry(0,0xFFFFFFF, GDT_Present|GDT_Sys|GDT_RW, GDT_BigPages|GDT_Bit32));
 	set_gdt_entry(GDT_KERNEL_TSS_SEG/8, construct_gdt_entry(KMEM_TSS_LOC,sizeof(tss_entry_t), GDT_Present|GDT_Code|GDT_ACC, GDT_BigPages|GDT_Bit32));
+	//Both of those are ring 3
+	set_gdt_entry(GDT_USER_CODE_SEG/8, construct_gdt_entry(0,0xFFFFFFF, GDT_Present|GDT_DPL1|GDT_DPL2|GDT_Code|GDT_Sys|GDT_RW|GDT_Conforming, GDT_BigPages|GDT_Bit32));
+	set_gdt_entry(GDT_USER_DATA_SEG/8, construct_gdt_entry(0,0xFFFFFFF, GDT_Present|GDT_DPL1|GDT_DPL2|GDT_Sys|GDT_RW, GDT_BigPages|GDT_Bit32));
+	set_gdt_entry(GDT_USER_TSS_SEG/8, construct_gdt_entry(KMEM_USER_TSS_LOC,sizeof(tss_entry_t), GDT_Present|GDT_DPL1|GDT_DPL2|GDT_Code|GDT_ACC, GDT_BigPages|GDT_Bit32));
 	remap_gdt();
 }
 

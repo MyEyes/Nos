@@ -53,7 +53,7 @@ void map_dir(page_dir_t* dir, void* v_addr, void* p_addr)
 		terminal_writestring("Creating table at: ");
 		terminal_writeuint32((uint32_t)(KMEM_PG_TABLE_LOC+iv_te*PAGE_SIZE));
 		terminal_writestring("\n");
-		page_dir_entry_create(dir->entries+iv_te, (void*)(KMEM_PG_TABLE_LOC+iv_te*PAGE_SIZE), PG_RW|PG_Present);
+		page_dir_entry_create(dir->entries+iv_te, (void*)(KMEM_PG_TABLE_LOC+iv_te*PAGE_SIZE), PG_RW|PG_Present|PG_User);
 		i_tbl = (uint32_t)dir->entries[iv_te].table;
 	}
 	map_tbl(PAGE_ENTRY_TO_PTR(i_tbl), v_addr, p_addr);
@@ -74,7 +74,7 @@ void map_tbl(page_table_t* tbl, void* v_addr, void* p_addr)
 		terminal_writeuint32((uint32_t)PAGE_ENTRY_TO_PTR(p_addr));
 		terminal_writestring("\n");
 	}
-	page_table_entry_create((tbl->entries+iv_te), p_addr, PG_Present | PG_RW);
+	page_table_entry_create((tbl->entries+iv_te), p_addr, PG_Present | PG_RW | PG_User);
 }
 
 void enable_paging(page_dir_t* dir)

@@ -48,4 +48,5 @@ typedef struct __attribute__((packed))
 extern tss_entry_t* kernel_tss;
 void init_kernel_tss();
 void load_tss(uint32_t desc);
+void print_tss(tss_entry_t* entry);
 #endif
