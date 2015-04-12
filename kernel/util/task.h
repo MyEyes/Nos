@@ -5,6 +5,7 @@
 typedef struct
 {
 	uint32_t esp;
+	uint8_t level;
 	void (*entry)();
 } task_t;
 

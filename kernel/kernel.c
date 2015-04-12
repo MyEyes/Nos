@@ -17,14 +17,15 @@
 #include "res/scheduler.h"
 #include "kernel.h"
 
+extern uint16_t* terminal_buffer;
 void user_test1()
 {
-	 while(1) {terminal_writestring("a");}
+	 while(1) {*((char*)terminal_buffer) = '1';}
 }
 
 void user_test2()
 {
-	while(1) {terminal_writestring("b");}
+	while(1) {*((char*)terminal_buffer) = '2';}
 }
 
 void kernel_bootstrap()

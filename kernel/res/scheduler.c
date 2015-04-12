@@ -32,7 +32,7 @@ void scheduler_spawn(task_t* task)
 
 void init_scheduler()
 {
-	set_idt_desc(IRQ_OFFSET+0x00, (uint32_t)&schedule_handler, 0, TrapGate32, 0x08);
+	set_idt_desc(IRQ_OFFSET+0x00, (uint32_t)&schedule_handler, 0, IntGate32, 0x08);
 }
 
 void schd_task_add(task_t* task)
@@ -62,19 +62,19 @@ void schd_task_del(task_t* task)
 
 void yield_control()
 {
-	//__asm__("pop %%eax": : :"memory"); 
-	//Pop return address from stack since
-	//we've already set up all the return
-	//stuff for an iret
-	switch_task(curr_task, next_task);
+	__asm__("add $0x14, %%esp": : :"memory"); 
+	//Workaround because of some odd calling convention
+	old_task = curr_task;
+	curr_task=next_task;
+	switch_task(old_task, curr_task);
 }
 
 void schedule()
 {
 	schedule_switch_flag=0;
-	terminal_writeuint32(tasks[0]);
-	terminal_writeuint32(tasks[1]);
-	terminal_writeuint32(tasks[2]);
+	//terminal_writeuint32(tasks[0]);
+	//terminal_writeuint32(tasks[1]);
+	//terminal_writeuint32(tasks[2]);
 	
 	for(uint16_t index=1; index<SCHEDULER_MAX_TASKS; index++)
 	{
@@ -82,7 +82,6 @@ void schedule()
 		{
 			schedule_switch_flag = 1;
 			next_task = tasks[index];
-			bochs_break();
 			__asm__("mov %eax, %eax");
 			return;
 		}

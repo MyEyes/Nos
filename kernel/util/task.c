@@ -10,6 +10,7 @@ uint32_t old_stack;
 uint32_t target_stack;
 extern void jump_usermode();
 extern void switch_context();
+extern void switch_context_nolevel();
 
 //We should be in usermode here
 void user_mode_entry()
@@ -22,22 +23,23 @@ task_t* create_task(void (*entry)(), uint16_t ss, uint16_t cs, uint16_t ds)
 	task_t* new_task = kalloc(sizeof(task_t));
 	new_task->entry = entry;
 	new_task->esp = ((uint32_t)new_task)+PAGE_SIZE;
+	new_task->level = cs&0x3;
 	
 	task_context_t* stack = (task_context_t*)(new_task->esp-sizeof(task_context_t));
 	memzero((void*)stack, sizeof(stack));
 	stack->ss = ss;
-	if(cs&3)
+	if(new_task->level != 0)
 		stack->flags = 512;
 	else
 		stack->flags = 0;
-	stack->esp = (uint32_t)stack;
+	stack->esp = new_task->esp;
 	stack->cs = cs;
 	stack->ds = ds;
 	stack->es = ds;
 	stack->fs = ds;
 	stack->gs = ds;
 	stack->entry = (uint32_t)entry;
-	new_task->esp = stack->esp;
+	new_task->esp = (uint32_t) stack;
 	return new_task;
 }
 
@@ -72,5 +74,8 @@ void switch_task(task_t* oldtask, task_t* newtask)
 				:
 				:
 				:"memory");
-	switch_context();
+	if(oldtask->level != newtask->level)
+		switch_context();
+	else
+		switch_context_nolevel();
 }

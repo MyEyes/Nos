@@ -43,7 +43,6 @@ schedule_handler:
 	cmp $0, %eax
 	je schedule_no_switch
 	
-	xchg %bx, %bx
 	movl %esp, %edi							//Store kernel stack pointer in edi
 	//pusha stores 8 regs, push f one so we are at 9*4 offset
 	//then iret expects eip, cs, flags, esp and ss
@@ -70,6 +69,7 @@ schedule_no_switch:
 	
 .global kernel_panic_handler
 kernel_panic_handler:
+	xchg %bx, %bx
 	str 0x1100
 	call kernel_panic
 	iret
