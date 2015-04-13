@@ -43,8 +43,10 @@ INT41h_handler:
 schedule_handler:
 	
 	cli
+	
 	pusha
 	pushf
+	
 	movl (clock_fractions), %eax
 	movl (clock_ms), %ebx
 	addl %eax, (system_timer_fractions)

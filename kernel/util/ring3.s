@@ -33,7 +33,6 @@ create_kernel_context:
 .global switch_context
 switch_context:
 	
-	//xchg %bx, %bx
 	//Push state on stack
 	push %eax
 	push %ecx
@@ -54,7 +53,6 @@ switch_context:
 	movl %esp, (%eax)
 switch_context_no_store:
 	movl (target_stack), %eax
-	xchg %bx, %bx
 	movl %eax, %esp	//Load new stack location from eax into esp
 	
 	//Pop state from new stack
@@ -71,7 +69,6 @@ switch_context_no_store:
 	pop %ecx
 	pop %eax
 		
-	xchg %bx, %bx
 	iret
 
 .global switch_context_nolevel
@@ -91,7 +88,6 @@ switch_context_nolevel:
 	push %gs
 	
 	
-	xchg %bx, %bx
 	//Somehow needs to store esp for switching back
 	movl (old_stack), %eax
 	cmp $0, %eax
@@ -124,7 +120,6 @@ switch_context_nolevel_no_store:
 	pop %eax
 	
 	add $2*4, %esp
-	xchg %bx, %bx
 	iret
 
 .global no_switch
@@ -142,7 +137,6 @@ no_switch:
 	
 .global yield_control
 yield_control:
-	xchg %bx, %bx
 	sub $12, %esp	//offset esp so we can store stuff further up the stack
 	push %eax
 	push %edx
@@ -175,7 +169,6 @@ switch_task:
 	
 	//Two parameters on stack
 	
-	//xchg %bx, %bx
 	push %eax
 	push %edx
 	push %ecx
@@ -197,7 +190,6 @@ switch_task:
 	pop %edx
 	pop %eax
 	add $8, %esp		//Remove the two parameters from the stack
-	xchg %bx, %bx
 	jmp no_switch
 do_switch:
 	//Determine if we need to switch CPU rings
@@ -212,7 +204,6 @@ do_switch:
 	pop %edx
 	pop %eax
 	add $8, %esp		//Remove the two parameters from the stack
-	xchg %bx, %bx
 	jmp switch_context_nolevel
 do_level_switch:
 	pop %ebx			//Pop values back
@@ -220,7 +211,6 @@ do_level_switch:
 	pop %edx
 	pop %eax
 	add $8, %esp		//Remove the two parameters from the stack
-	xchg %bx, %bx
 	jmp switch_context
 
 .global call_task

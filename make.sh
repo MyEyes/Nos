@@ -12,7 +12,7 @@ cd ..
 dd if=stage2.bin of=boot.img seek=1 obs=512 >& /dev/null
 dd if=stage2pro.bin of=boot.img seek=9 obs=512 >& /dev/null
 cd ../kernel
-make
+make all
 mv nos ../nos.bin
 cd ..
 dd if=bootloader/boot.img of=disk.img >& /dev/null

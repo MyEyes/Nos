@@ -26,7 +26,7 @@ void kernel_bootstrap()
 	
 	init_kernel_paging();							//Initialize paging
 	
-	kalloc_vmem_add((void*)KMEM_KERN_RESERVED_LIMIT, 0x100000); //1MB
+	kalloc_vmem_add((void*)KMEM_KERN_RESERVED_LIMIT, KMEM_START_RAM); //1MB
 	
 	terminal_initialize();
 	
@@ -49,7 +49,9 @@ void kernel_run()
 {
 		
 	terminal_writestring("Hello, kernel World!\n\n");
-	print_meminfo();
+	//print_meminfo();
+
+	//pmem_print_info();
 	
 	terminal_writestring("\n");
 	//print_gdt_info();
@@ -58,25 +60,11 @@ void kernel_run()
 	
 	set_idt_desc(IRQ_OFFSET+0x01, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8); //Disable keyboard interrupt
 	
-	//terminal_writeuint64(clock_get_time());
-	
-	//task_t* test_task1 = create_user_task(user_test1, 1);
-	//task_t* test_task2 = create_user_task(user_test2, -4);
-	
-	bochs_break();
-	
 	enable_interrupts();
 		
 	load_tss(GDT_USER_TSS_SEG+3);
 	
-	//schd_task_add(test_task2);
-	//scheduler_spawn(test_task1);
-	
-	//scheduler_spawn(test_task);
-	//call_user(test_task);
-	
 	terminal_writestring("Back in the kernel\n\n");
-	bochs_break();
 	while(1);
 	halt();
 }

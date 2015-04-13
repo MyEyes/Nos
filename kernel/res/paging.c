@@ -88,7 +88,7 @@ void enable_paging(page_dir_t* dir)
 
 void init_kernel_paging()
 {
-	//Map kernel memory
+	//Identity Map kernel memory
 	kernel_page_dir = page_dir_create(KMEM_PG_DIR_LOC);
 	page_dir_create((void*)PAGE_SIZE);
 	
@@ -100,7 +100,7 @@ void init_kernel_paging()
 		{
 			print_meminfo_page(page);
 			for(uint32_t addr = page->base_addr;
-			addr+PAGE_SIZE <= page->base_addr+page->reg_length && addr+PAGE_SIZE<=KMEM_PG_TABLE_LIMIT;
+			addr+PAGE_SIZE <= page->base_addr+page->reg_length && addr+PAGE_SIZE<=KMEM_KERNEL_LIMIT;
 			addr+=PAGE_SIZE)
 			{
 				map_dir(kernel_page_dir, (void*)addr, (void*)addr);
@@ -109,10 +109,7 @@ void init_kernel_paging()
 		else
 			break;
 	}
-	
-	//Map address of terminal buffer for debugging.
-	map_dir(kernel_page_dir, (void*)0xB8000, (void*)0xB8000);
-	
+	//Tell meminfo that we have taken up some memory for the kernels exclusive use
+	pmem_mod_range(0, KMEM_KERNEL_LIMIT, PMEM_KERNEL_OWNER, PMEM_KERN|PMEM_MAPPED);
 	enable_paging(kernel_page_dir);
-	bochs_break();
 }
