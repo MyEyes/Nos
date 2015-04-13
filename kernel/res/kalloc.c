@@ -152,8 +152,11 @@ void kalloc_info_delete(kalloc_info_t* entry)
 		entry->prev->next=entry->next;
 	if(entry->next)
 		entry->next->prev=entry->prev;
+	
 	//Don't need to deallocate here because 
 	//entries always reside in their respective memory region
+	//BUT we unmap the relevant memory regions
+	unmap_dir(kernel_page_dir, (void*)entry);
 }
 
 void* kalloc_reqDMA(void* addr, uint32_t size)
@@ -177,12 +180,10 @@ void kfree(void* addr)
 		return;
 	else if(info->state & KI_reserved)
 	{
-		//If this was DMA vmem remap to identity
-		if(info->state & KI_DMA)
-		{
-			for(uint32_t caddr=(uint32_t)info->base_addr; caddr<(uint32_t)info->base_addr+info->size; caddr+=PAGE_SIZE)
-				map_dir(kernel_page_dir, (void*)caddr, (void*)caddr);
-		}
+		for(uint32_t caddr=(uint32_t)info->base_addr;	
+		caddr<(uint32_t)info->base_addr+info->size;
+		caddr+=PAGE_SIZE)
+				unmap_dir(kernel_page_dir, (void*)caddr);
 		info->state = KI_free;
 		info = kalloc_info_trymerge(info, info->next);
 		info = kalloc_info_trymerge(info->prev, info);

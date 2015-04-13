@@ -6,7 +6,8 @@ typedef enum
 {
 	TSK_Running,
 	TSK_Waiting,
-	TSK_Paused
+	TSK_Paused,
+	TSK_Terminated
 } task_state;
 
 typedef struct
@@ -21,6 +22,7 @@ typedef struct
 	
 	int64_t time_slice;
 	void (*entry)();
+	uint16_t pid;
 } task_t;
 
 typedef struct
@@ -48,6 +50,8 @@ typedef struct
 void call_user(task_t* task);
 task_t* create_user_task(void (*entry)(), int8_t priority);
 task_t* create_task(void (*entry)(), uint16_t ss, uint16_t cs, uint16_t ds, int8_t priority);
+void task_print(task_t*);
+
 __attribute__((noreturn)) void call_task(task_t* task);
 __attribute__((noreturn)) void switch_task(task_t* oldtask, task_t* newtask);
 #endif

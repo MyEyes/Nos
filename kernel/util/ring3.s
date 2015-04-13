@@ -1,3 +1,5 @@
+.set KERNEL_STACK, 0x00006000
+
 .global jump_usermode
 .extern user_mode_entry
 
@@ -22,7 +24,7 @@ create_kernel_context:
 	//pop ecx to save return address through stack switch
 	pop %ecx
 	//Kernel Stack constant defined in kernel.h
-	movl $0x6000, %eax
+	movl $KERNEL_STACK, %eax
 	movl %eax, %esp
 	//push ecx to return to correct place
 	push %ecx
@@ -161,6 +163,91 @@ yield_control:
 	pop %eax
 	jmp   switch_task
 
+kern_esp: .long 0
+.global stop_task
+stop_task:
+	xchg %bx, %bx
+	sub $4, %esp
+	push %eax
+	push %esi
+	push %edi
+	
+	
+	mov 6*4(%esp), %eax			//Store cs for iret
+	movl $0, kern_esp
+	mov %esp, %eax
+	add $4*4, %eax
+	mov %eax, 12(%esp)			//Store current esp further up
+	and $3, %eax
+	
+	jz stop_restore_regs		//If 0 we aren't switching rings
+	
+	mov 8*4(%esp), %esi			//Store return esp in %esi
+	sub $20, %esi					//Move down 5 dwords
+	mov %esi, 12(%esp)			//overwrite stored esp with tasks esp
+	mov %esp, %edi				//Store %esp in %edi
+	add $5*4, %edi				//Move up to where iret header is
+	
+	lodsl 	//1 
+	stosl
+	lodsl	//2
+	stosl
+	lodsl	//3
+	stosl
+	lodsl	//4
+	stosl
+	lodsl	//5
+	stosl
+	
+	mov %esp, %eax
+	add $16, %eax
+	mov %eax, kern_esp			//Store correct esp at bottom of kernel stack
+								//Last 5 dwords are now not interesting anymore
+								
+stop_restore_regs:
+	pop %edi
+	pop %esi
+	pop %eax
+	pop %esp					//Now in current tasks stack
+	
+	push %eax					//Push state on tasks stack
+	push %ecx
+	push %edx
+	push %ebx
+	push %ebp
+	push %esi
+	push %edi
+	push %ds
+	push %es
+	push %fs
+	push %gs
+	xchg %bx, %bx
+	
+	mov (curr_task), %eax		//We patch the stack address of the current task
+	mov %esp, (%eax)
+	mov kern_esp, %eax
+	cmp $0, %eax
+	je no_esp_restore
+	mov %eax, %esp	//Restore kernel stack
+no_esp_restore:
+	ret
+	
+.global resume_task
+	mov (curr_task), %eax		//eax=curr_task
+	mov (%eax), %esp			//esp=curr_task->esp
+	pop %gs
+	pop %fs
+	pop %es
+	pop %ds
+	pop %edi
+	pop %esi
+	pop %ebp
+	pop %ebx
+	pop %edx
+	pop %ecx
+	pop %eax
+	iret
+	
 .global switch_task
 switch_task:
 	//can't regcall because we need to preserve task state

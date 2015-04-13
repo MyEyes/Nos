@@ -13,8 +13,14 @@ struct task_list_st
 };
 
 __attribute__((noreturn)) void scheduler_spawn(task_t* task);
+void schedule_kill();
+void schedule_task_stop();
+
+extern task_t* kernel_task;
+
 void schd_task_add(task_t* task);
 void schd_task_del(task_t* task);
 void init_scheduler();
+uint16_t get_current_pid();
 
 #endif

@@ -8,6 +8,8 @@
 meminfo_page_t* meminfo_store;
 pmem_dir_t* pmem_dir = (pmem_dir_t*) KMEM_PMEM_DIR_LOC;
 
+uint32_t pmem_total_memory;
+
 void set_meminfo_ptr(meminfo_page_t** firstPage)
 {
 	meminfo_store = (meminfo_page_t*)(((void*)*firstPage));
@@ -115,9 +117,6 @@ void* pmem_get_free_page()
 		uint16_t tbl_info = PMEM_INFO(dir_entry->table);
 		if(tbl_info)
 		{
-			terminal_writestring("Free hindex ");
-			terminal_writeuint16(hindex);
-			terminal_writeuint16(tbl_info);
 			pmem_table_t* tbl = PMEM_ADDR(dir_entry->table);
 			for(uint16_t lindex=0; lindex<1024; lindex++)
 			{
@@ -202,6 +201,9 @@ void pmem_map()
 	meminfo_page_t* currentPage = meminfo_store;
 	while(currentPage->reg_length>0)
 	{		
+		if(currentPage->reg_type==1)
+			pmem_total_memory+=currentPage->reg_length;
+		
 		pmem_add_mem_page(currentPage);
 		currentPage+=1;
 	}

@@ -5,10 +5,12 @@
 #include "../res/paging.h"
 #include "../res/mem.h"
 #include "../res/gdt.h"
+#include "../util/terminal.h"
 
 void (*target)();
 uint32_t old_stack;
 uint32_t target_stack;
+uint16_t pid_counter = 0;
 
 //All define in ring3.s
 extern void jump_usermode();
@@ -36,6 +38,7 @@ task_t* create_task(void (*entry)(), uint16_t ss, uint16_t cs, uint16_t ds, int8
 	new_task->priority = 0;
 	new_task->priority_mod = priority;
 	new_task->time_slice=0;
+	new_task->pid = pid_counter++;
 	new_task->state = TSK_Waiting;
 	
 	task_context_t* stack = (task_context_t*)(new_task->esp-sizeof(task_context_t));
@@ -54,6 +57,58 @@ task_t* create_task(void (*entry)(), uint16_t ss, uint16_t cs, uint16_t ds, int8
 	stack->entry = (uint32_t)entry;
 	new_task->esp = (uint32_t) stack;
 	return new_task;
+}
+
+void task_print(task_t* task)
+{
+	terminal_writestring("Task: ");
+	terminal_writeuint16(task->pid);
+	terminal_writeuint32((uint32_t)task->entry);
+	
+	task_context_t* stack = (task_context_t*)(task->esp);
+	terminal_writestring("\n");
+	
+	terminal_writestring("GS: ");
+	terminal_writeuint16(stack->gs);
+	terminal_writestring("FS: ");
+	terminal_writeuint16(stack->fs);
+	terminal_writestring("ES: ");
+	terminal_writeuint16(stack->es);
+	terminal_writestring("DS: ");
+	terminal_writeuint16(stack->ds);
+	terminal_writestring("\n");
+	
+	terminal_writestring("EDI: ");
+	terminal_writeuint32(stack->edi);
+	terminal_writestring("ESI: ");
+	terminal_writeuint32(stack->esi);
+	terminal_writestring("EBP: ");
+	terminal_writeuint32(stack->ebp);
+	terminal_writestring("\n");
+	
+	terminal_writestring("EBX: ");
+	terminal_writeuint32(stack->ebx);
+	terminal_writestring("EDX: ");
+	terminal_writeuint32(stack->edx);
+	terminal_writestring("ECX: ");
+	terminal_writeuint32(stack->ecx);
+	terminal_writestring("\n");
+	
+	terminal_writestring("EAX: ");
+	terminal_writeuint32(stack->eax);
+	terminal_writestring("ENT: ");
+	terminal_writeuint32(stack->entry);
+	terminal_writestring("ESP: ");
+	terminal_writeuint32(stack->esp);
+	terminal_writestring("\n");
+	
+	terminal_writestring("CS:  ");
+	terminal_writeuint32(stack->cs);
+	terminal_writestring("SS:  ");
+	terminal_writeuint32(stack->ss);
+	terminal_writestring("FLG: ");
+	terminal_writeuint32(stack->flags);
+	terminal_writestring("\n");
 }
 
 /* In ASM now

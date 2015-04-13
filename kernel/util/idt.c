@@ -30,6 +30,7 @@ extern void* kernel_panic_handler;
 
 extern void* INT40h_handler;
 extern void* INT41h_handler;
+extern void* page_fault_handler;
 
 void int40h()
 {
@@ -51,8 +52,8 @@ void setup_idt()
 	}
 	
 	//set_idt_desc(0x80, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8);
-	set_idt_desc(0x40, (uint32_t)&INT40h_handler, 3, IntGate32, 0x8);
-	set_idt_desc(0x41, (uint32_t)&INT41h_handler, 3, IntGate32, 0x8);
+	//set_idt_desc(0x40, (uint32_t)&INT40h_handler, 3, IntGate32, 0x8);
+	//set_idt_desc(0x41, (uint32_t)&INT41h_handler, 3, IntGate32, 0x8);
 	
 	//set_idt_desc(SS_DEBUG_EXC, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
 	//set_idt_desc(INVALID_TSS_EXC, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
@@ -62,5 +63,5 @@ void setup_idt()
 	
 	set_idt_desc(DOUBLE_FAULT, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
 	//set_idt_desc(SEGFAULT, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
-	set_idt_desc(PAGEFAULT, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
+	set_idt_desc(PAGEFAULT, (uint32_t)&page_fault_handler, 0, IntGate32, 0x8);
 }

@@ -45,6 +45,11 @@ void kernel_bootstrap()
 	//map_dir(kernel_page_dir, (void*)KMEM_USER_STACK_LOC, (void*) KMEM_USER_STACK_LOC);
 }
 
+void mem_violation_test()
+{
+	
+}
+
 void kernel_run()
 {
 		
@@ -61,13 +66,21 @@ void kernel_run()
 	set_idt_desc(IRQ_OFFSET+0x01, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8); //Disable keyboard interrupt
 	
 	enable_interrupts();
+	
+	kalloc_vmem_add((void*)USERSPACE_LOC, pmem_total_memory-KMEM_KERNEL_LIMIT);
 		
 	load_tss(GDT_USER_TSS_SEG+3);
 	
+	task_t* task = create_user_task(mem_violation_test, 0);
+	scheduler_spawn(task);
+	
+	bochs_break();
 	terminal_writestring("Back in the kernel\n\n");
 	while(1);
 	halt();
 }
+
+task_t* kernel_task;
 
 void kernel_main()
 {	
@@ -75,7 +88,7 @@ void kernel_main()
 	kernel_bootstrap();
 	
 	//load_tss(GDT_KERNEL_TSS_SEG);
-	task_t* kernel_task = create_task(kernel_run, 0x10, 0x8, 0x10, 0);
+	kernel_task = create_task(kernel_run, 0x10, 0x8, 0x10, 0);
 	kernel_task->time_slice = 0xFFFF00000000;
 	
 	init_scheduler();

@@ -47,6 +47,8 @@ typedef struct
 	pmem_dir_entry_t entries[1024];
 } pmem_dir_t;
 
+extern uint32_t pmem_total_memory;
+
 void set_meminfo_ptr(meminfo_page_t** firstPage);
 void init_meminfo();
 void print_meminfo();

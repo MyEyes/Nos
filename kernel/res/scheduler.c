@@ -4,6 +4,7 @@
 #include "../util/debug.h"
 #include "../util/terminal.h"
 #include "../util/clock.h"
+#include "../kernel.h"
 
 //Jump array
 //Empty entry points to next filled one
@@ -59,6 +60,14 @@ void schd_task_add(task_t* task)
 	}
 }
 
+uint16_t get_current_pid()
+{
+	if(curr_task)
+		return curr_task->pid;
+	else
+		return (uint16_t)-1;
+}
+
 void schd_task_del(task_t* task)
 {
 	for(uint32_t index = 0; index<SCHEDULER_MAX_TASKS; index++)
@@ -83,27 +92,12 @@ void schd_task_del(task_t* task)
 	}
 }
 
-/*
-Moved to ASM
-void yield_control()
+void schedule_kill()
 {
-	__asm__("add $0x14, %%esp": : :"memory"); 
-	//Workaround because of c calling convention
-	//We don't return from here so we clean the stack
-	//by hand
-	old_task = curr_task;
-	curr_task = next_task;
-	
-	old_task->time_slice = 0;
-	old_task->state = TSK_Waiting;
-	old_task->priority = 0;
-	
-	next_task->state = TSK_Running;
-	next_task->time_slice = next_task->priority;
-	
-	switch_task(old_task, curr_task);
+	curr_task->state = TSK_Terminated;
 }
-*/
+
+
 
 void schedule()
 {
@@ -113,7 +107,7 @@ void schedule()
 	if(curr_task)
 		curr_task->time_slice -= time_diff;
 	
-	if(!curr_task || curr_task->time_slice<0)
+	if(!curr_task || curr_task->state == TSK_Terminated || curr_task->time_slice<=0)
 	{
 		schedule_switch_flag = 1;					//We want to switch if our current process is done for now
 		curr_task->priority=0;
@@ -131,7 +125,17 @@ void schedule()
 			else
 			{
 				if(next_task == 0)
-					schedule_switch_flag=0;
+				{
+					terminal_writestring("no task found\n");
+					if(curr_task->state == TSK_Terminated)
+					{
+						terminal_writestring("ret to kernel\n");
+						next_task = kernel_task;
+						schedule_switch_flag = 1;
+					}
+					else
+						schedule_switch_flag=0;
+				}
 				else
 				{
 					next_task->time_slice = next_task->priority*100;
@@ -155,4 +159,5 @@ void schedule()
 			}
 		}
 	}
+	terminal_writestring("left for loop\n");
 }

@@ -1,9 +1,13 @@
-.global do_nothing_int
-do_nothing_int:
+acc_interrupt:
 	push %eax
 	movb $0x20, %al
 	outb %al, $0x20
 	pop %eax
+	ret
+
+.global do_nothing_int
+do_nothing_int:
+	call acc_interrupt
 	iret
 
 .global IRQ0_handler
@@ -15,8 +19,7 @@ IRQ0_handler:
 	addl %eax, (system_timer_fractions)
 	adcl %ebx, (system_timer_ms)		/*Update system clock*/
 	
-	movb $0x20, %al
-	outb %al, $0x20
+	call acc_interrupt
 	pop %ebx
 	pop %eax
 	iret
@@ -25,8 +28,7 @@ IRQ0_handler:
 INT40h_handler:
 	cli
 	call int40h
-	movb $0x20, %al
-	outb %al, $0x20
+	call acc_interrupt
 	sti
 	iret
 	
@@ -34,18 +36,15 @@ INT40h_handler:
 INT41h_handler:
 	cli
 	call int41h
-	movb $0x20, %al
-	outb %al, $0x20
+	call acc_interrupt
 	sti
 	iret
 	
 .global schedule_handler
 schedule_handler:
-	
 	cli
 	
-	pusha
-	pushf
+	call stop_task
 	
 	movl (clock_fractions), %eax
 	movl (clock_ms), %ebx
@@ -58,27 +57,33 @@ schedule_handler:
 	movl (schedule_switch_flag), %eax		//Figure out if we want to switch context
 	cmp $0, %eax
 	je schedule_no_switch
-	
-	movl %esp, %edi							//Store kernel stack pointer in edi
-	//pusha stores 8 regs, push f one so we are at 9*4 offset
-	//then iret expects eip, cs, flags, esp and ss
-	//we want the running processes esp so  12*4
-	movl 48(%edi), %edx						//Should be process esp
-	movl %edx, %esp							//Set stack pointer to process stack and push iret values
-	push 52(%edi)							//Push return ss
-	push 48(%edi)							//Push return esp
-	push 44(%edi)							//Push return flags
-	push 40(%edi)							//Push return cs
-	push 36(%edi)							//Push return eip
-	movl %esp,   48(%edi)					//Write back esp for int iret with patched esp
-	movl $yield_control, %eax
-	movl %eax, 36(%edi)						//Make iret return to a yield_control routine that switches context properly				
-	movl %edi,%esp
+
 schedule_no_switch:
-	movb $0x20, %al
-	outb %al, $0x20
+	call acc_interrupt
+	sti
+	iret
+
+page_fault_err: .long 0
+.global page_fault_handler
+page_fault_handler:
+	xchg %bx, %bx
+	//We already have an error code on the stack
+	movl %eax, page_fault_err
+	pop %eax
+	xchg page_fault_err, %eax
+	call stop_task
+	pusha	//8 regs
+	pushf	//1 reg
+	mov 9*4(%esp), %eax
+	push %eax
+	mov %cr2, %eax
+	push %eax
+	call paging_handle_pagefault
+	add $8, %esp
 	popf
 	popa
+	add $4, %esp	//Get rid of original error code
+	call acc_interrupt
 	sti
 	iret
 	

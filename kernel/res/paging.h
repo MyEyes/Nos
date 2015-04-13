@@ -4,6 +4,8 @@
 #define PAGE_SIZE 4096
 #define PAGE_ENTRY_TO_PTR(ent) ((void*)(((uint32_t)ent)&0xFFFFF000))
 
+#include <stdint.h>
+
 typedef enum
 {
 	PG_Global = 256,
@@ -53,6 +55,12 @@ void map_dir(page_dir_t* dir, void* v_addr, void* p_addr);
 
 void map_tbl(page_table_t* tbl, void* v_addr, void* p_addr);
 
+void unmap_dir(page_dir_t* dir, void* v_addr);
+
+void unmap_tbl(page_table_t* tbl, void* v_addr);
+
 void init_kernel_paging();
+
+void flush_tlb_single(uint32_t addr);
 
 #endif
