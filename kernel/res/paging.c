@@ -113,6 +113,7 @@ void enable_paging(page_dir_t* dir)
 
 void paging_handle_pagefault(void* vAddr, uint32_t err_code)
 {
+	//terminal_writestring("Page Fault\n");
 	//err_code bits
 	//0			1		2		3			4
 	//present	write	user	res_write	instruction

@@ -1,3 +1,4 @@
+.global acc_interrupt
 acc_interrupt:
 	push %eax
 	movb $0x20, %al
@@ -54,38 +55,36 @@ schedule_handler:
 	adcl %ebx, (diff_timer_ms)
 	
 	call schedule
-	movl (schedule_switch_flag), %eax		//Figure out if we want to switch context
-	cmp $0, %eax
-	je schedule_no_switch
 
-schedule_no_switch:
-	call acc_interrupt
-	sti
-	iret
+	jmp resume_task
 
 page_fault_err: .long 0
 .global page_fault_handler
 page_fault_handler:
+	
 	xchg %bx, %bx
 	//We already have an error code on the stack
 	movl %eax, page_fault_err
 	pop %eax
 	xchg page_fault_err, %eax
-	call stop_task
+	
+	call stop_task	//Stop current task, will do nothing if we're still the kernel
+	
 	pusha	//8 regs
 	pushf	//1 reg
-	mov 9*4(%esp), %eax
+	
+	//paging_handle_pagefault(cr2, page_fault_err);
+	mov page_fault_err, %eax
 	push %eax
 	mov %cr2, %eax
 	push %eax
 	call paging_handle_pagefault
 	add $8, %esp
+	
 	popf
 	popa
-	add $4, %esp	//Get rid of original error code
-	call acc_interrupt
-	sti
-	iret
+	xchg %bx, %bx
+	jmp resume_task
 	
 .global kernel_panic_handler
 kernel_panic_handler:

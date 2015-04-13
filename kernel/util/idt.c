@@ -31,6 +31,7 @@ extern void* kernel_panic_handler;
 extern void* INT40h_handler;
 extern void* INT41h_handler;
 extern void* page_fault_handler;
+extern void* spawn;
 
 void int40h()
 {
@@ -51,7 +52,7 @@ void setup_idt()
 		set_idt_desc(x, 0, 0, 0, 0);
 	}
 	
-	//set_idt_desc(0x80, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8);
+	set_idt_desc(0x80, (uint32_t)&spawn, 0, IntGate32, 0x8);
 	//set_idt_desc(0x40, (uint32_t)&INT40h_handler, 3, IntGate32, 0x8);
 	//set_idt_desc(0x41, (uint32_t)&INT41h_handler, 3, IntGate32, 0x8);
 	

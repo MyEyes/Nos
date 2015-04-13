@@ -11,28 +11,18 @@
 task_t* tasks[SCHEDULER_MAX_TASKS];
 
 task_t* old_task;
-task_t* curr_task;
+task_t* curr_task = 0;
 task_t* next_task;
 
 uint8_t schedule_switch_flag;
 
 extern void (*schedule_handler)();
 
-__attribute__((noreturn)) void scheduler_spawn(task_t* task)
+void scheduler_spawn(task_t* task)
 {
 	schd_task_add(task);
-	
-	if(curr_task)
-	{
-		old_task=curr_task;
-		curr_task = task;
-		switch_task(old_task, curr_task);
-	}
-	else
-	{
-		curr_task = task;
-		call_task(task);
-	}
+	next_task=task;
+	__asm__ ("int $0x80");
 }
 
 void init_scheduler()
@@ -40,6 +30,12 @@ void init_scheduler()
 	set_idt_desc(IRQ_OFFSET+0x00, (uint32_t)&schedule_handler, 0, IntGate32, 0x08);
 	//Initialize jump array
 	tasks[0] = (void*)SCHEDULER_MAX_TASKS;
+	curr_task = 0;
+}
+
+void print_current_task()
+{
+	task_print(curr_task);
 }
 
 void schd_task_add(task_t* task)
@@ -91,13 +87,20 @@ void schd_task_del(task_t* task)
 		}
 	}
 }
-
 void schedule_kill()
 {
 	curr_task->state = TSK_Terminated;
+	terminal_writestring("Killed task: \n");
+	task_print(curr_task);
+	schd_task_del(curr_task);
+	
+	schedule();
+	
+	curr_task = next_task;
+	terminal_writestring("Resuming\n");
+	bochs_break();
+	resume_task();
 }
-
-
 
 void schedule()
 {
@@ -114,6 +117,7 @@ void schedule()
 	}
 	
 	uint64_t current_prio = 0;
+	next_task=0;
 	
 	for(uint16_t index=1; index<SCHEDULER_MAX_TASKS; index++)
 	{
@@ -126,10 +130,8 @@ void schedule()
 			{
 				if(next_task == 0)
 				{
-					terminal_writestring("no task found\n");
 					if(curr_task->state == TSK_Terminated)
 					{
-						terminal_writestring("ret to kernel\n");
 						next_task = kernel_task;
 						schedule_switch_flag = 1;
 					}

@@ -52,7 +52,6 @@ void mem_violation_test()
 
 void kernel_run()
 {
-		
 	terminal_writestring("Hello, kernel World!\n\n");
 	//print_meminfo();
 
@@ -65,7 +64,7 @@ void kernel_run()
 	
 	set_idt_desc(IRQ_OFFSET+0x01, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8); //Disable keyboard interrupt
 	
-	enable_interrupts();
+	//enable_interrupts();
 	
 	kalloc_vmem_add((void*)USERSPACE_LOC, pmem_total_memory-KMEM_KERNEL_LIMIT);
 		
@@ -102,8 +101,9 @@ void kernel_panic()
 	disable_interrupts();
 	terminal_initialize();
 	terminal_writestring("Kernel Panic\n\n");
-	gdt_entry_t entry = raw_to_gdt_entry(gdt_get_raw_entry((*(uint16_t*)0x1100)/8));
-	print_tss((tss_entry_t*)entry.base_addr);
+	//gdt_entry_t entry = raw_to_gdt_entry(gdt_get_raw_entry((*(uint16_t*)0x1100)/8));
+	//print_tss((tss_entry_t*)entry.base_addr);
+	print_current_task();
 	halt();
 	while(1); //Infinite loop if the halt somehow breaks
 }

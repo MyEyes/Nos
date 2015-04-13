@@ -27,6 +27,8 @@ typedef struct
 
 typedef struct
 {
+	uint32_t esp2;
+		
 	uint32_t gs;
 	uint32_t fs;
 	uint32_t es;

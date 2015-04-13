@@ -54,6 +54,7 @@ task_t* create_task(void (*entry)(), uint16_t ss, uint16_t cs, uint16_t ds, int8
 	stack->es = ds;
 	stack->fs = ds;
 	stack->gs = ds;
+	stack->esp2 = ((uint32_t) stack) + 4;
 	stack->entry = (uint32_t)entry;
 	new_task->esp = (uint32_t) stack;
 	return new_task;
@@ -70,11 +71,11 @@ void task_print(task_t* task)
 	
 	terminal_writestring("GS: ");
 	terminal_writeuint16(stack->gs);
-	terminal_writestring("FS: ");
+	terminal_writestring("  FS: ");
 	terminal_writeuint16(stack->fs);
-	terminal_writestring("ES: ");
+	terminal_writestring("  ES: ");
 	terminal_writeuint16(stack->es);
-	terminal_writestring("DS: ");
+	terminal_writestring("  DS: ");
 	terminal_writeuint16(stack->ds);
 	terminal_writestring("\n");
 	
