@@ -13,7 +13,7 @@ typedef enum
 	PG_Dirty = 64,
 	PG_Accessed = 32,
 	PG_CacheDisable = 16,
-	PG_WriteTrough = 8,
+	PG_WriteThrough = 8,
 	PG_User = 4,
 	PG_RW = 2,
 	PG_Present = 1
@@ -51,14 +51,15 @@ page_table_entry_t* page_table_entry_create(page_table_entry_t* entry, void* phy
 
 void enable_paging(page_dir_t* table);
 
-void map_dir(page_dir_t* dir, void* v_addr, void* p_addr);
+void kernel_map_page(void* v_addr, void* p_addr, page_flags flags);
 
-void map_tbl(page_table_t* tbl, void* v_addr, void* p_addr);
+void map_dir(page_dir_t* dir, void* v_addr, void* p_addr, void* tbl_loc, page_flags flags);
+void map_tbl(page_table_t* tbl, void* v_addr, void* p_addr, page_flags flags);
 
 void unmap_dir(page_dir_t* dir, void* v_addr);
-
 void unmap_tbl(page_table_t* tbl, void* v_addr);
 
+void create_kernel_pages(page_dir_t* dir);
 void init_kernel_paging();
 
 void flush_tlb_single(uint32_t addr);

@@ -16,7 +16,6 @@ kern_esp: .long 0
 ret_addr: .long 0
 .global stop_task
 stop_task:
-	xchg %bx, %bx
 	pop ret_addr				//Store return address elsewhere
 	sub $4, %esp
 	push %eax
@@ -32,7 +31,6 @@ stop_task:
 	
 	jz stop_kern_stop			//If 0 we aren't switching rings
 	
-	xchg %bx, %bx
 	mov 7*4(%esp), %esi			//Store return esp in %esi
 	sub $20, %esi				//Move down 5 dwords
 	mov %esi, 12(%esp)			//overwrite stored esp with tasks esp
@@ -73,7 +71,6 @@ stop_kern_copy:
 	push %fs
 	push %gs
 	push %esp
-	xchg %bx, %bx
 	
 	mov (curr_task), %eax		//We patch the stack address of the current task
 	cmp $0, %eax
@@ -86,7 +83,6 @@ stop_nopatch:
 	ret
 	
 stop_kern_stop:
-	
 	mov %esp, %eax
 	sub $8*4, %eax
 	mov %eax, kern_esp			//Store correct return esp
@@ -95,9 +91,10 @@ stop_kern_stop:
 	
 .global resume_task
 resume_task:
-	xchg %bx, %bx
 	mov (curr_task), %eax		//eax=curr_task
 	mov (%eax), %esp			//esp=curr_task->esp
+	movl 4(%eax), %eax			//eax=cr3
+	mov %eax, %cr3
 	pop %esp
 	pop %gs
 	pop %fs
@@ -112,11 +109,11 @@ resume_task:
 	pop %eax
 	call acc_interrupt
 	sti
+	xchg %bx, %bx
 	iret
 
 .global spawn
 spawn:
-	xchg %bx, %bx
 	call stop_task
 	movl next_task, %eax
 	movl %eax, curr_task

@@ -25,21 +25,6 @@ IRQ0_handler:
 	pop %eax
 	iret
 
-.global INT40h_handler
-INT40h_handler:
-	cli
-	call int40h
-	call acc_interrupt
-	sti
-	iret
-	
-.global INT41h_handler
-INT41h_handler:
-	cli
-	call int41h
-	call acc_interrupt
-	sti
-	iret
 	
 .global schedule_handler
 schedule_handler:

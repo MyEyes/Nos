@@ -168,7 +168,7 @@ void* kalloc_reqDMA(void* addr, uint32_t size)
 		info->state |= KI_DMA;
 		addr = (void*)(((uint32_t)addr)&0xFFFFF000);
 		for(uint32_t offset=0; offset<info->size; offset+=PAGE_SIZE)
-			map_dir(kernel_page_dir, vAddr+offset, addr+offset);
+			kernel_map_page(vAddr+offset, addr+offset, PG_Present|PG_RW|PG_WriteThrough|PG_Global);
 	}
 	return vAddr;
 }

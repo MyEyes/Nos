@@ -28,22 +28,9 @@ void load_idt()
 
 extern void* kernel_panic_handler;
 
-extern void* INT40h_handler;
-extern void* INT41h_handler;
 extern void* page_fault_handler;
 extern void* spawn;
 
-void int40h()
-{
-	terminal_writestring("b");
-	bochs_break();
-}
-
-void int41h()
-{
-	terminal_writestring("a");
-	bochs_break();
-}
 
 void setup_idt()
 {
@@ -52,17 +39,16 @@ void setup_idt()
 		set_idt_desc(x, 0, 0, 0, 0);
 	}
 	
-	set_idt_desc(0x80, (uint32_t)&spawn, 0, IntGate32, 0x8);
-	//set_idt_desc(0x40, (uint32_t)&INT40h_handler, 3, IntGate32, 0x8);
-	//set_idt_desc(0x41, (uint32_t)&INT41h_handler, 3, IntGate32, 0x8);
+	set_idt_desc(PROC_START, (uint32_t)&spawn, 0, IntGate32, 0x8);
 	
-	//set_idt_desc(SS_DEBUG_EXC, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
-	//set_idt_desc(INVALID_TSS_EXC, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
-	//set_idt_desc(NO_COPROC_EXC, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
-	//set_idt_desc(OVERFLOW, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
-	//set_idt_desc(NMI, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
+	set_idt_desc(SS_DEBUG_EXC, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
+	set_idt_desc(INVALID_TSS_EXC, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
+	set_idt_desc(NO_COPROC_EXC, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
+	set_idt_desc(OVERFLOW, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
+	set_idt_desc(NMI, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
 	
 	set_idt_desc(DOUBLE_FAULT, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
-	//set_idt_desc(SEGFAULT, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
+	set_idt_desc(SEGFAULT, (uint32_t)&kernel_panic_handler, 0, IntGate32, 0x8);
+	
 	set_idt_desc(PAGEFAULT, (uint32_t)&page_fault_handler, 0, IntGate32, 0x8);
 }

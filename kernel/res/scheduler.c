@@ -22,7 +22,8 @@ void scheduler_spawn(task_t* task)
 {
 	schd_task_add(task);
 	next_task=task;
-	__asm__ ("int $0x80");
+	terminal_writestring("Spawning\n");
+	__asm__ ("int $0x40");
 }
 
 void init_scheduler()

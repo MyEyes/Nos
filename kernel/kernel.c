@@ -13,6 +13,7 @@
 #include "res/kalloc.h"
 #include "util/pic.h"
 #include "res/tss.h"
+#include "res/mem.h"
 #include "util/task.h"
 #include "res/scheduler.h"
 #include "kernel.h"
@@ -42,35 +43,32 @@ void kernel_bootstrap()
 	
 	remap_pic();
 	
-	//map_dir(kernel_page_dir, (void*)KMEM_USER_STACK_LOC, (void*) KMEM_USER_STACK_LOC);
 }
 
 void mem_violation_test()
 {
-	
+	*(char*)(0xB8000)='A';
+	while(1);
 }
 
 void kernel_run()
 {
 	terminal_writestring("Hello, kernel World!\n\n");
-	//print_meminfo();
-
-	//pmem_print_info();
-	
-	terminal_writestring("\n");
-	//print_gdt_info();
-	
-	//terminal_writestring("\n");
 	
 	set_idt_desc(IRQ_OFFSET+0x01, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8); //Disable keyboard interrupt
-	
-	//enable_interrupts();
 	
 	kalloc_vmem_add((void*)USERSPACE_LOC, pmem_total_memory-KMEM_KERNEL_LIMIT);
 		
 	load_tss(GDT_USER_TSS_SEG+3);
 	
-	task_t* task = create_user_task(mem_violation_test, 0);
+	
+	//kalloc_print_vmem_info();	
+	task_t* task = create_user_task((void*)USERSPACE_LOC,(void*)USERSPACE_LOC, (void*)(USERSPACE_LOC+0x5000), 0);
+	terminal_writestring("Copying to ");
+	terminal_writeuint32(task->ker_mem_start);
+	terminal_writestring("\n");
+	memcpy( (void*)task->ker_mem_start,(void*)mem_violation_test, 0x1000);
+	//kalloc_print_vmem_info();
 	scheduler_spawn(task);
 	
 	bochs_break();
@@ -86,12 +84,9 @@ void kernel_main()
 	create_kernel_context();
 	kernel_bootstrap();
 	
-	//load_tss(GDT_KERNEL_TSS_SEG);
-	kernel_task = create_task(kernel_run, 0x10, 0x8, 0x10, 0);
+	kernel_task = create_task(kernel_run,0,0, 0x10, 0x8, 0x10, 0);
 	kernel_task->time_slice = 0xFFFF00000000;
-	
 	init_scheduler();
-	
 	scheduler_spawn(kernel_task);
 }
 
@@ -101,8 +96,7 @@ void kernel_panic()
 	disable_interrupts();
 	terminal_initialize();
 	terminal_writestring("Kernel Panic\n\n");
-	//gdt_entry_t entry = raw_to_gdt_entry(gdt_get_raw_entry((*(uint16_t*)0x1100)/8));
-	//print_tss((tss_entry_t*)entry.base_addr);
+	
 	print_current_task();
 	halt();
 	while(1); //Infinite loop if the halt somehow breaks
