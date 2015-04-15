@@ -2,7 +2,7 @@
 #include "../util/terminal.h"
 #include "mem.h"
 #include "../kernel.h"
-#include "tss.h"
+#include "../proc/tss.h"
 
 gdt_info_t gdt_info __asm__("gdt_info");
 gdt_info_t* gdt_info_ptr;

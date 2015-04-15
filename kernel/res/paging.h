@@ -4,6 +4,8 @@
 #define PAGE_SIZE 4096
 #define PAGE_ENTRY_TO_PTR(ent) ((void*)(((uint32_t)ent)&0xFFFFF000))
 
+#define KERNEL_PAGE_FLAGS PG_RW|PG_Present|PG_WriteThrough
+
 #include <stdint.h>
 
 typedef enum

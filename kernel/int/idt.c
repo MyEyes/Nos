@@ -1,6 +1,6 @@
 #include "idt.h"
-#include "terminal.h"
-#include "debug.h"
+#include "../util/terminal.h"
+#include "../util/debug.h"
 idt_desc_t idt_descs[256];					//Interrupt descriptor table
 idt_info_t idt_info __asm__ ("idt_info");	//Interrupt table info
 

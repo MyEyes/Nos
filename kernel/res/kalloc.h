@@ -47,4 +47,6 @@ void* kalloc_reqDMA(void* addr, uint32_t size);
 
 void kfree(void*);
 
+void kalloc_init();
+
 #endif

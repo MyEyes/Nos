@@ -1,5 +1,5 @@
 #include "task.h"
-#include "../res/tss.h"
+#include "tss.h"
 #include "../res/gdt.h"
 #include "../res/kalloc.h"
 #include "../res/paging.h"

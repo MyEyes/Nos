@@ -46,8 +46,6 @@ schedule_handler:
 page_fault_err: .long 0
 .global page_fault_handler
 page_fault_handler:
-	
-	xchg %bx, %bx
 	//We already have an error code on the stack
 	movl %eax, page_fault_err
 	pop %eax
@@ -68,7 +66,6 @@ page_fault_handler:
 	
 	popf
 	popa
-	xchg %bx, %bx
 	jmp resume_task
 	
 .global kernel_panic_handler

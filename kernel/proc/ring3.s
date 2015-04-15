@@ -109,7 +109,6 @@ resume_task:
 	pop %eax
 	call acc_interrupt
 	sti
-	xchg %bx, %bx
 	iret
 
 .global spawn

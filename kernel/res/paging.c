@@ -1,10 +1,11 @@
+#include <stdint.h>
+
 #include "paging.h"
 #include "mem.h"
 #include "../util/terminal.h"
-#include <stdint.h>
 #include "../kernel.h"
 #include "meminfo.h"
-#include "scheduler.h"
+#include "../proc/scheduler.h"
 #include "../util/debug.h"
 
 page_dir_t* kernel_page_dir;
@@ -69,7 +70,9 @@ void map_dir(page_dir_t* dir, void* v_addr, void* p_addr, void* tbl_loc, page_fl
 	uint32_t i_tbl = (uint32_t)dir->entries[iv_te].table;
 	if(!(i_tbl&PG_Present))			//If page table doesn't exist
 	{
-		page_dir_entry_create(dir->entries+iv_te, tbl_loc, flags|PG_User);	//Set User so we can mark wether something is a user page on mem page level
+		//Set User so we can mark wether something is a user page on mem page level
+		//Otherwise the priv check fails already at the directory
+		page_dir_entry_create(dir->entries+iv_te, tbl_loc, flags|PG_User);
 		i_tbl = (uint32_t)dir->entries[iv_te].table;
 	}
 	map_tbl(PAGE_ENTRY_TO_PTR(i_tbl), v_addr, p_addr, flags);
@@ -127,14 +130,13 @@ void enable_paging(page_dir_t* dir)
 
 void paging_handle_pagefault(void* vAddr, uint32_t err_code)
 {
-
 	//err_code bits
 	//0			1		2		3			4
 	//present	write	user	res_write	instruction
 	if(!(err_code&1)) //If the fault was caused because a page wasn't present
 	{
 		void* pAddr = pmem_get_free_page();
-		kernel_map_page(vAddr,pAddr, PG_Present|PG_RW|PG_WriteThrough);
+		kernel_map_page(vAddr,pAddr, KERNEL_PAGE_FLAGS);
 		int16_t owner = PMEM_KERNEL_OWNER;
 		if((err_code&0x4))
 			owner = get_current_pid();
@@ -145,9 +147,6 @@ void paging_handle_pagefault(void* vAddr, uint32_t err_code)
 		if((err_code&0x4))
 		{
 			terminal_writestring("Access violation, killing process\n");
-			terminal_writeuint32(vAddr);
-			terminal_writeuint32(err_code);
-			terminal_writestring("\n");
 			bochs_break();
 			//Reset stack to where it should be for a scheduler call
 			/*uint32_t esp = KMEM_SYSCALL_STACK_LOC;
@@ -166,7 +165,7 @@ void create_kernel_pages(page_dir_t* page_dir)
 	tbl<(KMEM_KERNEL_LIMIT>>22);
 	tbl++)
 	{
-		page_dir_entry_create(page_dir->entries+tbl, (void*)(KMEM_PG_TABLE_LOC+tbl*PAGE_SIZE), PG_RW|PG_Present|PG_Global|PG_WriteThrough);
+		page_dir_entry_create(page_dir->entries+tbl, (void*)(KMEM_PG_TABLE_LOC+tbl*PAGE_SIZE), KERNEL_PAGE_FLAGS|PG_Global);
 	}
 }
 
@@ -183,7 +182,7 @@ void init_kernel_paging()
 	addr+=PAGE_SIZE)
 	{
 		uint16_t i_te = addr >> 22;		//Upper 10bits
-		map_dir(kernel_page_dir, (void*)addr, (void*)addr, (void*)(KMEM_PG_TABLE_LOC+i_te*PAGE_SIZE), PG_RW|PG_Present|PG_Global|PG_WriteThrough);
+		map_dir(kernel_page_dir, (void*)addr, (void*)addr, (void*)(KMEM_PG_TABLE_LOC+i_te*PAGE_SIZE), KERNEL_PAGE_FLAGS|PG_Global);
 	}
 
 	//Tell meminfo that we have taken up some memory for the kernels exclusive use

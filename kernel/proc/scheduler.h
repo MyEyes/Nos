@@ -1,6 +1,6 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
-#include "../util/task.h"
+#include "../proc/task.h"
 
 #define SCHEDULER_MAX_TASKS 256
 

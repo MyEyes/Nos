@@ -1,5 +1,7 @@
 #include "kalloc.h"
 #include "paging.h"
+#include "meminfo.h"
+#include "../kernel.h"
 #include "../util/terminal.h"
 
 kalloc_info_t* vmem;
@@ -13,6 +15,14 @@ void kalloc_vmem_add(void* addr, uint32_t size)
 	}
 	else
 		vmem = kalloc_create_info(addr, size, KI_free);
+}
+
+void kalloc_init()
+{
+	//Map the first few pages for use before we enter proper paging
+	for(uint32_t offset = 0; offset<=0x10*PAGE_SIZE; offset+=PAGE_SIZE)
+		kernel_map_page((void*)USERSPACE_LOC+offset, (void*)USERSPACE_LOC+offset, KERNEL_PAGE_FLAGS);
+	kalloc_vmem_add((void*)USERSPACE_LOC, pmem_total_memory-KMEM_KERNEL_LIMIT);
 }
 
 kalloc_info_t* kalloc_vmem_block(void* addr, uint32_t size)
@@ -168,7 +178,7 @@ void* kalloc_reqDMA(void* addr, uint32_t size)
 		info->state |= KI_DMA;
 		addr = (void*)(((uint32_t)addr)&0xFFFFF000);
 		for(uint32_t offset=0; offset<info->size; offset+=PAGE_SIZE)
-			kernel_map_page(vAddr+offset, addr+offset, PG_Present|PG_RW|PG_WriteThrough|PG_Global);
+			kernel_map_page(vAddr+offset, addr+offset, KERNEL_PAGE_FLAGS|PG_Global);
 	}
 	return vAddr;
 }

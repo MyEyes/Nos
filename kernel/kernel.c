@@ -1,21 +1,26 @@
 #include <stdbool.h> /* C doesn't have booleans by default. */
 #include <stddef.h>
 #include <stdint.h>
-#include "util/terminal.h"
+
+#include "proc/task.h"
+#include "proc/tss.h"
+#include "proc/scheduler.h"
+
+#include "int/int.h"
+#include "int/idt.h"
+#include "int/pic.h"
+
 #include "res/meminfo.h"
-#include "util/int.h"
-#include "res/gdt.h"
-#include "util/idt.h"
 #include "res/portio.h"
-#include "util/clock.h"
-#include "util/debug.h"
+#include "res/gdt.h"
 #include "res/paging.h"
 #include "res/kalloc.h"
-#include "util/pic.h"
-#include "res/tss.h"
 #include "res/mem.h"
-#include "util/task.h"
-#include "res/scheduler.h"
+
+#include "util/terminal.h"
+#include "util/clock.h"
+#include "util/debug.h"
+
 #include "kernel.h"
 
 
@@ -27,13 +32,13 @@ void kernel_bootstrap()
 	
 	init_kernel_paging();							//Initialize paging
 	
-	kalloc_vmem_add((void*)KMEM_KERN_RESERVED_LIMIT, KMEM_START_RAM); //1MB
+	kalloc_init();
 	
-	terminal_initialize();
+	terminal_initialize();							//Initialize terminal so we can print debug stuff
 	
-	init_kernel_tss();
+	init_kernel_tss();								//Initialize kernel context
 	
-	load_tss(GDT_KERNEL_TSS_SEG);
+	load_tss(GDT_KERNEL_TSS_SEG);					//Load kernel context
 	
 	setup_idt();									//Allocate IDT memory and clear table
 	
@@ -41,35 +46,19 @@ void kernel_bootstrap()
 	
 	load_idt();										//Point IDT and set interrupt table active
 	
-	remap_pic();
+	remap_pic();									//Remap PIC so we can tell IRQs and Exceptions apart
 	
 }
 
-void mem_violation_test()
-{
-	*(char*)(0xB8000)='A';
-	while(1);
-}
 
 void kernel_run()
 {
 	terminal_writestring("Hello, kernel World!\n\n");
 	
 	set_idt_desc(IRQ_OFFSET+0x01, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8); //Disable keyboard interrupt
-	
-	kalloc_vmem_add((void*)USERSPACE_LOC, pmem_total_memory-KMEM_KERNEL_LIMIT);
 		
 	load_tss(GDT_USER_TSS_SEG+3);
 	
-	
-	//kalloc_print_vmem_info();	
-	task_t* task = create_user_task((void*)USERSPACE_LOC,(void*)USERSPACE_LOC, (void*)(USERSPACE_LOC+0x5000), 0);
-	terminal_writestring("Copying to ");
-	terminal_writeuint32(task->ker_mem_start);
-	terminal_writestring("\n");
-	memcpy( (void*)task->ker_mem_start,(void*)mem_violation_test, 0x1000);
-	//kalloc_print_vmem_info();
-	scheduler_spawn(task);
 	
 	bochs_break();
 	terminal_writestring("Back in the kernel\n\n");

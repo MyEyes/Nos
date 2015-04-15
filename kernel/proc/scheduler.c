@@ -1,6 +1,6 @@
 #include "scheduler.h"
-#include "../util/idt.h"
-#include "../util/task.h"
+#include "../int/idt.h"
+#include "../proc/task.h"
 #include "../util/debug.h"
 #include "../util/terminal.h"
 #include "../util/clock.h"
