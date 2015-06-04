@@ -1,27 +1,29 @@
 #include <stdbool.h> /* C doesn't have booleans by default. */
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
-#include "proc/task.h"
-#include "proc/tss.h"
-#include "proc/scheduler.h"
+#include <task.h>
+#include <tss.h>
+#include <scheduler.h>
 
-#include "int/int.h"
-#include "int/idt.h"
-#include "int/pic.h"
+#include <int.h>
+#include <idt.h>
+#include <pic.h>
 
-#include "res/meminfo.h"
-#include "res/portio.h"
-#include "res/gdt.h"
-#include "res/paging.h"
-#include "res/kalloc.h"
-#include "res/mem.h"
+#include <meminfo.h>
+#include <portio.h>
+#include <gdt.h>
+#include <paging.h>
+#include <kalloc.h>
+#include <ipc/ipc.h>
 
-#include "util/terminal.h"
-#include "util/clock.h"
-#include "util/debug.h"
+#include <terminal.h>
+#include <clock.h>
+#include <debug.h>
+#include "drv/terminal_drv.h"
 
-#include "kernel.h"
+#include <kernel.h>
 
 
 void kernel_bootstrap()
@@ -48,17 +50,30 @@ void kernel_bootstrap()
 	
 	remap_pic();									//Remap PIC so we can tell IRQs and Exceptions apart
 	
+	init_ipc();
+	
 }
 
+void kern_test_term_drv()
+{
+	bochs_break();
+	enable_interrupts();
+	send_to_port(1, -1, "This is a test!\n", 17);
+	send_to_port(1, -1, "If you see this message\n", 25);
+	send_to_port(1, -1, "Then rudimentary IPC works\n", 28);
+	while(1);
+}
 
 void kernel_run()
 {
 	terminal_writestring("Hello, kernel World!\n\n");
 	
-	set_idt_desc(IRQ_OFFSET+0x01, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8); //Disable keyboard interrupt
-		
-	load_tss(GDT_USER_TSS_SEG+3);
+	set_idt_desc(IRQ_OFFSET+0x01, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8); //Disable keyboard interrupt	
 	
+	start_terminal_drv();
+	
+	task_t* term_test = create_task(kern_test_term_drv, 0, 0, GDT_KERNEL_DATA_SEG, GDT_KERNEL_CODE_SEG, GDT_KERNEL_DATA_SEG, 0);
+	scheduler_spawn(term_test);
 	
 	bochs_break();
 	terminal_writestring("Back in the kernel\n\n");
@@ -73,8 +88,8 @@ void kernel_main()
 	create_kernel_context();
 	kernel_bootstrap();
 	
-	kernel_task = create_task(kernel_run,0,0, 0x10, 0x8, 0x10, 0);
-	kernel_task->time_slice = 0xFFFF00000000;
+	kernel_task = create_task(kernel_run, 0, 0, GDT_KERNEL_DATA_SEG, GDT_KERNEL_CODE_SEG, GDT_KERNEL_DATA_SEG, 0);
+	kernel_task->time_slice = 0x0000F00000000;
 	init_scheduler();
 	scheduler_spawn(kernel_task);
 }

@@ -1,13 +1,13 @@
 #ifndef TASK_H
 #define TASK_H
 #include <stdint.h>
-#include "../res/paging.h"
+#include <paging.h>
 
 typedef enum
 {
 	TSK_Running,
 	TSK_Waiting,
-	TSK_Paused,
+	TSK_Sleeping,
 	TSK_Terminated
 } task_state;
 

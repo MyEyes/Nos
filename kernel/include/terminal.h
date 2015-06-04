@@ -4,7 +4,7 @@
 #include <stdbool.h> /* C doesn't have booleans by default. */
 #include <stddef.h>
 #include <stdint.h>
-#include "string.h"
+#include <string.h>
 /* Hardware text mode color constants. */
 enum vga_color
 {
@@ -35,6 +35,7 @@ void terminal_writeuint8(const uint8_t data);
 void terminal_writeuint16(const uint16_t data);
 void terminal_writeuint32(const uint32_t data);
 void terminal_writeuint64(const uint64_t data);
+void ctohs(char in, char* buf);
 uint16_t make_vgaentry(char c, uint8_t color);
 uint8_t make_color(enum vga_color fg, enum vga_color bg);
 #endif

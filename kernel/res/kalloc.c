@@ -1,8 +1,8 @@
-#include "kalloc.h"
-#include "paging.h"
-#include "meminfo.h"
-#include "../kernel.h"
-#include "../util/terminal.h"
+#include <kalloc.h>
+#include <paging.h>
+#include <meminfo.h>
+#include <kernel.h>
+#include <terminal.h>
 
 kalloc_info_t* vmem;
 

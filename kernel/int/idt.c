@@ -1,6 +1,8 @@
-#include "idt.h"
-#include "../util/terminal.h"
-#include "../util/debug.h"
+#include <idt.h>
+#include <terminal.h>
+#include <debug.h>
+#include <scheduler.h>
+#include <gdt.h>
 idt_desc_t idt_descs[256];					//Interrupt descriptor table
 idt_info_t idt_info __asm__ ("idt_info");	//Interrupt table info
 
@@ -17,6 +19,14 @@ void set_idt_desc(uint8_t index, uint32_t offset, uint8_t cpulevel, idt_type typ
 	idt_descs[index].type_attr = type;
 	idt_descs[index].type_attr |= (cpulevel&0x03)<<5; //Set cpu level
 	idt_descs[index].type_attr |= 0x80; //Set present bit
+}
+
+void register_drv_int(uint8_t index, uint32_t offset)
+{
+	task_t* curr = get_current_task();
+	if(!curr)
+		return;
+	set_idt_desc(index+DRV_START, offset, curr->level, IntGate32, (curr->level&0x03) ? GDT_USER_CODE_SEG : GDT_KERNEL_CODE_SEG);
 }
 
 void load_idt()

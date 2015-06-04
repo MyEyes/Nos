@@ -1,10 +1,12 @@
-#include "scheduler.h"
-#include "../int/idt.h"
-#include "../proc/task.h"
-#include "../util/debug.h"
-#include "../util/terminal.h"
-#include "../util/clock.h"
-#include "../kernel.h"
+#include <scheduler.h>
+#include <idt.h>
+#include <task.h>
+#include <debug.h>
+#include <terminal.h>
+#include <clock.h>
+#include <kernel.h>
+#include <string.h>
+#include <sys/types.h>
 
 //Jump array
 //Empty entry points to next filled one
@@ -22,8 +24,32 @@ void scheduler_spawn(task_t* task)
 {
 	schd_task_add(task);
 	next_task=task;
-	terminal_writestring("Spawning\n");
 	__asm__ ("int $0x40");
+}
+
+void sleep()
+{
+	//Set task to sleeping
+	//And invoke scheduler interrupt
+	curr_task->state = TSK_Sleeping;
+	curr_task->time_slice = -1;
+	__asm__("int $0x20");
+}
+
+void signal(pid_t pid)
+{
+	for(uint16_t index = 0; index<SCHEDULER_MAX_TASKS; index++)
+	{
+		if((uint32_t)tasks[index]<=SCHEDULER_MAX_TASKS)
+		{
+			index+=(uint32_t)tasks[index]-1;
+		}
+		else if(tasks[index]->pid == pid && tasks[index]->state == TSK_Sleeping)
+		{
+			tasks[index]->state = TSK_Waiting;
+			return;
+		}
+	}
 }
 
 void init_scheduler()
@@ -57,12 +83,17 @@ void schd_task_add(task_t* task)
 	}
 }
 
-uint16_t get_current_pid()
+pid_t get_current_pid()
 {
 	if(curr_task)
 		return curr_task->pid;
 	else
 		return (uint16_t)-1;
+}
+
+task_t* get_current_task()
+{
+	return curr_task;
 }
 
 void schd_task_del(task_t* task)
@@ -107,6 +138,7 @@ void schedule()
 {
 	schedule_switch_flag=0;
 	uint64_t time_diff = clock_time_diff();
+
 	
 	if(curr_task)
 		curr_task->time_slice -= time_diff;
@@ -142,6 +174,9 @@ void schedule()
 				else
 				{
 					next_task->time_slice = next_task->priority*100;
+					next_task->priority=0;
+					curr_task = next_task;
+					bochs_break();
 				}
 				return;
 			}
@@ -162,5 +197,4 @@ void schedule()
 			}
 		}
 	}
-	terminal_writestring("left for loop\n");
 }

@@ -1,17 +1,22 @@
-#include "mem.h"
+#include <stddef.h>
 
-void memcpy(char* trg, char* src, size_t num)
+void* memcpy(void* trg, const void* src, size_t num)
 {
-	for(size_t cnt = 0; cnt<num; cnt++)
+	char* dst8 = (char*) trg;
+	char* src8 = (char*) src;
+	while(num--)
 	{
-		trg[cnt] = src[cnt];
+		*dst8++ = *src8++;
 	}
+	return trg;
 }
 
-void memzero(char* trg, size_t num)
+void* memzero(void* trg, size_t num)
 {
-	for(size_t cnt = 0; cnt<num; cnt++)
+	char* dst8 = (char*) trg;
+	while(num--)
 	{
-		trg[cnt] = 0;
+		*dst8++ = 0;
 	}
+	return trg;
 }

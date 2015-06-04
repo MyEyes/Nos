@@ -1,12 +1,12 @@
 
 PATH:="~/opt/cross/bin:$(PATH)"
 
-CC = i686-elf-gcc
-AS = i686-elf-as
+CC = i686-nos-gcc
+AS = i686-nos-as
 CFLAGS = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -c
 
-KERN_C_FILES = kernel.c res/*.c util/*.c int/*.c proc/*.c
-KERN_AS_FILES = boot.s int/*.s proc/*s 
+KERN_C_FILES = kernel.c res/*.c util/*.c int/*.c proc/*.c ipc/*.c drv/*.c
+KERN_AS_FILES = boot.s int/*.s proc/*s
 
 KERN_FILES = $(KERN_C_FILES) $(KERN_AS_FILES)
 KERN_OFILES = *.o

@@ -1,12 +1,11 @@
 #include <stdint.h>
-
-#include "paging.h"
-#include "mem.h"
-#include "../util/terminal.h"
-#include "../kernel.h"
-#include "meminfo.h"
-#include "../proc/scheduler.h"
-#include "../util/debug.h"
+#include <string.h>
+#include <paging.h>
+#include <terminal.h>
+#include <kernel.h>
+#include <meminfo.h>
+#include <scheduler.h>
+#include <debug.h>
 
 page_dir_t* kernel_page_dir;
 

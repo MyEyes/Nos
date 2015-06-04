@@ -1,8 +1,8 @@
-#include "tss.h"
-#include "../res/gdt.h"
-#include "../res/mem.h"
-#include "../kernel.h"
-#include "../util/terminal.h"
+#include <tss.h>
+#include <gdt.h>
+#include <string.h>
+#include <kernel.h>
+#include <terminal.h>
 tss_entry_t* kernel_tss = (tss_entry_t*) KMEM_TSS_LOC;
 
 void init_kernel_tss()

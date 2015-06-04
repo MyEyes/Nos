@@ -1,9 +1,8 @@
-#include "meminfo.h"
-#include "../util/terminal.h"
-#include "../kernel.h"
-#include "paging.h"
-#include "mem.h"
-#include "../util/debug.h"
+#include <meminfo.h>
+#include <terminal.h>
+#include <kernel.h>
+#include <paging.h>
+#include <debug.h>
 
 meminfo_page_t* meminfo_store;
 pmem_dir_t* pmem_dir = (pmem_dir_t*) KMEM_PMEM_DIR_LOC;

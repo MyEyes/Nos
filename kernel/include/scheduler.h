@@ -1,7 +1,7 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
-#include "../proc/task.h"
-
+#include <task.h>
+#include <sys/types.h>
 #define SCHEDULER_MAX_TASKS 256
 
 typedef struct task_list_st task_list_t;
@@ -23,7 +23,8 @@ void schd_task_add(task_t* task);
 void schd_task_del(task_t* task);
 void init_scheduler();
 void schedule();
-uint16_t get_current_pid();
+pid_t get_current_pid();
+task_t* get_current_task();
 
 void print_current_task();
 #endif

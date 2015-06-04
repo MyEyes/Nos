@@ -1,7 +1,7 @@
 #include "pic.h"
 #include <stddef.h>
-#include "../res/portio.h"
-#include "idt.h"
+#include <portio.h>
+#include <idt.h>
 
 void remap_pic()
 {

@@ -1,12 +1,12 @@
-#include "task.h"
-#include "tss.h"
-#include "../res/gdt.h"
-#include "../res/kalloc.h"
-#include "../res/paging.h"
-#include "../res/mem.h"
-#include "../res/gdt.h"
-#include "../util/terminal.h"
-#include "../kernel.h"
+#include <task.h>
+#include <tss.h>
+#include <gdt.h>
+#include <kalloc.h>
+#include <paging.h>
+#include <gdt.h>
+#include <terminal.h>
+#include <kernel.h>
+#include <string.h>
 
 void (*target)();
 uint32_t old_stack;

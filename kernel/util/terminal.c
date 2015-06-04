@@ -1,5 +1,5 @@
-#include "terminal.h"
-#include "../res/kalloc.h"
+#include <terminal.h>
+#include <kalloc.h>
 
 uint8_t make_color(enum vga_color fg, enum vga_color bg)
 {
@@ -92,7 +92,7 @@ void terminal_writestring(const char* data)
 
 void terminal_writebyte(const char c)
 {
-	const char* buf = "00";
+	static char* buf = "00";
 	ctohs(c, buf);	
 	terminal_writestring(buf);
 }

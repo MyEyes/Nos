@@ -42,7 +42,6 @@ typedef struct __attribute__((packed))
 	uint16_t	res11;//Reserved
 	uint16_t	res12;//Reserved
 	uint16_t	iopb_offset;
-	
 } tss_entry_t;
 
 extern tss_entry_t* kernel_tss;

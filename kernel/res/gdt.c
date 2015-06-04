@@ -1,8 +1,8 @@
-#include "gdt.h"
-#include "../util/terminal.h"
-#include "mem.h"
-#include "../kernel.h"
-#include "../proc/tss.h"
+#include <gdt.h>
+#include <terminal.h>
+#include <kernel.h>
+#include <tss.h>
+#include <string.h>
 
 gdt_info_t gdt_info __asm__("gdt_info");
 gdt_info_t* gdt_info_ptr;

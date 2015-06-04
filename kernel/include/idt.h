@@ -25,6 +25,8 @@
 
 #define PROC_START 0x40
 
+#define DRV_START 0x80
+
 extern void do_nothing_int();
 
 typedef enum
@@ -52,6 +54,7 @@ typedef struct __attribute__((__packed__))
 } idt_info_t;
 
 void set_idt_desc(uint8_t index, uint32_t offset, uint8_t cpulevel, idt_type type, uint16_t selector);
+void register_drv_int(uint8_t index, uint32_t offset);
 void enable_idt();
 void load_idt();
 void setup_idt();

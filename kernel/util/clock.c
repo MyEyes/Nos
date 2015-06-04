@@ -1,7 +1,7 @@
-#include "clock.h"
-#include "terminal.h"
-#include "../int/idt.h"
-#include "../res/portio.h"
+#include <clock.h>
+#include <terminal.h>
+#include <idt.h>
+#include <portio.h>
 
 volatile uint32_t clock_fractions;
 volatile uint32_t clock_ms;
