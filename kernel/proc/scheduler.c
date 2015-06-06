@@ -176,7 +176,6 @@ void schedule()
 					next_task->time_slice = next_task->priority*100;
 					next_task->priority=0;
 					curr_task = next_task;
-					bochs_break();
 				}
 				return;
 			}

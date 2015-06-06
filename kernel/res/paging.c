@@ -146,13 +146,6 @@ void paging_handle_pagefault(void* vAddr, uint32_t err_code)
 		if((err_code&0x4))
 		{
 			terminal_writestring("Access violation, killing process\n");
-			bochs_break();
-			//Reset stack to where it should be for a scheduler call
-			/*uint32_t esp = KMEM_SYSCALL_STACK_LOC;
-			__asm__ (	"mov %0, %%eax\r\n"
-						"sub $5*4, %%eax\r\n"
-						"mov %%eax, %%esp": : "m"(esp) :"memory", "%eax");
-						*/
 			schedule_kill();
 		}
 	}
@@ -187,5 +180,4 @@ void init_kernel_paging()
 	//Tell meminfo that we have taken up some memory for the kernels exclusive use
 	pmem_mod_range(0, KMEM_KERNEL_LIMIT, PMEM_KERNEL_OWNER, PMEM_KERN|PMEM_MAPPED);
 	enable_paging(kernel_page_dir);
-	bochs_break();
 }

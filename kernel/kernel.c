@@ -1,6 +1,7 @@
 #include <stdbool.h> /* C doesn't have booleans by default. */
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <task.h>
@@ -22,6 +23,7 @@
 #include <clock.h>
 #include <debug.h>
 #include "drv/terminal_drv.h"
+#include <floppy.h>
 
 #include <kernel.h>
 
@@ -54,13 +56,34 @@ void kernel_bootstrap()
 	
 }
 
+void kern_test_floppy_drv()
+{
+	enable_interrupts();
+	floppy_init();
+	terminal_writestring("Initialized floppy driver\n");
+	terminal_writestring("Reading\n");
+	floppy_read((void*)0,(void*)0, 512);
+	terminal_writestring("Done reading\n");
+	bochs_break();
+	uint64_t curr_time = clock_get_time();
+	while(1)
+	{
+		uint64_t ct = clock_get_time();
+		if(ct-curr_time>0x40000000000)
+		{
+			bochs_break();
+			curr_time = ct;
+		}
+	}
+}
+
 void kern_test_term_drv()
 {
 	bochs_break();
 	enable_interrupts();
-	send_to_port(1, -1, "This is a test!\n", 17);
-	send_to_port(1, -1, "If you see this message\n", 25);
-	send_to_port(1, -1, "Then rudimentary IPC works\n", 28);
+	//print("This is a test!\n");
+	//print("If you see this message\n");
+	//print("Then rudimentary IPC works\n");
 	while(1);
 }
 
@@ -70,10 +93,13 @@ void kernel_run()
 	
 	set_idt_desc(IRQ_OFFSET+0x01, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8); //Disable keyboard interrupt	
 	
-	start_terminal_drv();
+	//start_terminal_drv();
 	
-	task_t* term_test = create_task(kern_test_term_drv, 0, 0, GDT_KERNEL_DATA_SEG, GDT_KERNEL_CODE_SEG, GDT_KERNEL_DATA_SEG, 0);
-	scheduler_spawn(term_test);
+	task_t* floppy_test = create_task(kern_test_floppy_drv, 0, 0, GDT_KERNEL_DATA_SEG, GDT_KERNEL_CODE_SEG, GDT_KERNEL_DATA_SEG, 0);
+	//schd_task_add(floppy_test);
+	scheduler_spawn(floppy_test);
+	//task_t* term_test = create_task(kern_test_term_drv, 0, 0, GDT_KERNEL_DATA_SEG, GDT_KERNEL_CODE_SEG, GDT_KERNEL_DATA_SEG, 0);
+	//scheduler_spawn(term_test);
 	
 	bochs_break();
 	terminal_writestring("Back in the kernel\n\n");
@@ -90,6 +116,7 @@ void kernel_main()
 	
 	kernel_task = create_task(kernel_run, 0, 0, GDT_KERNEL_DATA_SEG, GDT_KERNEL_CODE_SEG, GDT_KERNEL_DATA_SEG, 0);
 	kernel_task->time_slice = 0x0000F00000000;
+	
 	init_scheduler();
 	scheduler_spawn(kernel_task);
 }

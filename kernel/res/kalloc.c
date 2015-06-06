@@ -5,6 +5,17 @@
 #include <terminal.h>
 
 kalloc_info_t* vmem;
+kalloc_info_t* dma_mem;
+
+
+void kalloc_init()
+{
+	//Map the first few pages for use before we enter proper paging
+	for(uint32_t offset = 0; offset<=0x10*PAGE_SIZE; offset+=PAGE_SIZE)
+		kernel_map_page((void*)USERSPACE_LOC+offset, (void*)USERSPACE_LOC+offset, KERNEL_PAGE_FLAGS);
+	kalloc_vmem_add((void*)USERSPACE_LOC, pmem_total_memory-KMEM_KERNEL_LIMIT);
+	kalloc_dma_mem_add((void*)KMEM_DMA_EXCL_LOC, KMEM_DMA_EXCL_SIZE);
+}
 
 void kalloc_vmem_add(void* addr, uint32_t size)
 {
@@ -14,15 +25,7 @@ void kalloc_vmem_add(void* addr, uint32_t size)
 		kalloc_info_append(kalloc_info_find(vmem, addr), new);
 	}
 	else
-		vmem = kalloc_create_info(addr, size, KI_free);
-}
-
-void kalloc_init()
-{
-	//Map the first few pages for use before we enter proper paging
-	for(uint32_t offset = 0; offset<=0x10*PAGE_SIZE; offset+=PAGE_SIZE)
-		kernel_map_page((void*)USERSPACE_LOC+offset, (void*)USERSPACE_LOC+offset, KERNEL_PAGE_FLAGS);
-	kalloc_vmem_add((void*)USERSPACE_LOC, pmem_total_memory-KMEM_KERNEL_LIMIT);
+		vmem = new;
 }
 
 kalloc_info_t* kalloc_vmem_block(void* addr, uint32_t size)
@@ -30,6 +33,27 @@ kalloc_info_t* kalloc_vmem_block(void* addr, uint32_t size)
 	uint32_t iaddr = ((uint32_t)addr&0xFFFFF000)+PAGE_SIZE-sizeof(kalloc_info_t);
 	kalloc_info_t* info = (kalloc_info_t*) iaddr;
 	info = kalloc_info_split(kalloc_info_find(vmem, addr), info, size);
+	if(info)
+		info->state = KI_reserved;
+	return info;
+}
+
+void kalloc_dma_mem_add(void* addr, uint32_t size)
+{
+	kalloc_info_t* new = kalloc_create_info(addr, size, KI_free);
+	if(dma_mem)
+	{
+		kalloc_info_append(kalloc_info_find(dma_mem, addr), new);
+	}
+	else
+		dma_mem = new;
+}
+
+kalloc_info_t* kalloc_dma_mem_block(void* addr, uint32_t size)
+{	
+	uint32_t iaddr = ((uint32_t)addr&0xFFFFF000)+PAGE_SIZE-sizeof(kalloc_info_t);
+	kalloc_info_t* info = (kalloc_info_t*) iaddr;
+	info = kalloc_info_split(kalloc_info_find(dma_mem, addr), info, size);
 	if(info)
 		info->state = KI_reserved;
 	return info;
@@ -216,4 +240,44 @@ kalloc_info_t* kalloc_info_trymerge(kalloc_info_t* original, kalloc_info_t* tryo
 		}
 	}
 	return original;
+}
+
+void* kalloc_dma_mem(size_t size)
+{
+	kalloc_info_t* curr = dma_mem;
+	//Add pagesize to hold page info
+	size+=PAGE_SIZE;
+	//If there are some trailing bytes we round up
+	if((size&0xFFF))
+	{
+		size = (size+PAGE_SIZE)&0xFFFFF000;
+	}
+	while(curr)
+	{
+		if(curr->size > size)
+		{
+			kalloc_info_t* info = kalloc_dma_mem_block(curr, size);
+			if(info)
+				return info->base_addr;
+		}
+		curr=curr->next;
+	}
+	return 0;
+}
+
+void kfree_dma_mem(void* addr)
+{
+	kalloc_info_t* info = kalloc_info_find(dma_mem, addr);
+	if(info->base_addr!=addr)	//Not an existing entry
+		return;
+	else if(info->state & KI_reserved)
+	{
+		for(uint32_t caddr=(uint32_t)info->base_addr;	
+		caddr<(uint32_t)info->base_addr+info->size;
+		caddr+=PAGE_SIZE)
+				unmap_dir(kernel_page_dir, (void*)caddr);
+		info->state = KI_free;
+		info = kalloc_info_trymerge(info, info->next);
+		info = kalloc_info_trymerge(info->prev, info);
+	}
 }

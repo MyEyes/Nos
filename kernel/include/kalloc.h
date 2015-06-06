@@ -1,6 +1,7 @@
 #ifndef KALLOC_H
 #define KALLOC_H
 #include <stdint.h>
+#include <stddef.h>
 
 typedef struct kalloc_info_st kalloc_info_t;
 
@@ -21,9 +22,7 @@ struct kalloc_info_st
 };
 
 void kalloc_vmem_add(void* addr, uint32_t size);
-
 kalloc_info_t* kalloc_vmem_block(void* addr, uint32_t size);
-
 void kalloc_print_vmem_info();
 
 void kalloc_print_info(kalloc_info_t* info);
@@ -49,4 +48,9 @@ void kfree(void*);
 
 void kalloc_init();
 
+void kalloc_dma_mem_add(void* addr, uint32_t size);
+kalloc_info_t* kalloc_dma_mem_block(void* addr, uint32_t size);
+
+void kfree_dma_mem(void*);
+void* kalloc_dma_mem(size_t);
 #endif

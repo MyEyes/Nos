@@ -28,8 +28,6 @@ IRQ0_handler:
 	
 .global schedule_handler
 schedule_handler:
-	cli
-	
 	call stop_task
 	
 	movl (clock_fractions), %eax

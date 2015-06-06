@@ -8,6 +8,8 @@
 #include <gdt.h>
 #include <debug.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <string.h>
 
 task_t* terminal_task;
 
@@ -29,22 +31,26 @@ void terminal_drv_run()
 	term_port = init_port(term_port_id, 4000);
 	open_port(term_port_id);
 	enable_interrupts();
-	terminal_writestring("(Hello, I'm your terminal driver)\n");
+	//terminal_writestring("(Hello, I'm your terminal driver)\n");
 	//Infinite loop waiting for messages
 	while(1)
 	{
 		//If we got a message we print it
-		terminal_writestring("(Checking for messages)\n");
-		bochs_break();
+		//terminal_writestring("(Checking for messages)\n");
 		if(!get_ipc_message(term_port_id, &curr_msg, buffer, 4000))
 		{
-			//terminal_writestring("Got a message\n");
 			terminal_writestring(buffer);
 		}
 		else
 		{
-			terminal_writestring("(Going to sleep)\n");
+			//terminal_writestring("(Going to sleep)\n");
 			sleep();
-		}//Ideally sleep here	;
+		}
 	}
+}
+
+int print(char* text)
+{
+	send_to_port(1, -1, text, strlen(text)+1);
+	return 0;
 }

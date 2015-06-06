@@ -6,7 +6,7 @@ AS = i686-nos-as
 CFLAGS = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -c
 
 KERN_C_FILES = kernel.c res/*.c util/*.c int/*.c proc/*.c ipc/*.c drv/*.c
-KERN_AS_FILES = boot.s int/*.s proc/*s
+KERN_AS_FILES = boot.s int/*.s proc/*s drv/*.s
 
 KERN_FILES = $(KERN_C_FILES) $(KERN_AS_FILES)
 KERN_OFILES = *.o

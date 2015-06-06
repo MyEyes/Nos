@@ -16,7 +16,6 @@ kern_esp: .long 0
 ret_addr: .long 0
 .global stop_task
 stop_task:
-	xchg %bx, %bx
 	pop ret_addr				//Store return address elsewhere
 	sub $4, %esp
 	push %eax
@@ -109,7 +108,6 @@ resume_task:
 	pop %ecx
 	pop %eax
 	call acc_interrupt
-	sti
 	iret
 
 .global spawn
