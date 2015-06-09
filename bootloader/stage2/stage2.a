@@ -16,6 +16,7 @@
 %include "elf.inc"
 %include "a20.inc"
 %include "protected.inc"
+%include "../stage1/ext2.inc"
 
 start:
 
@@ -31,27 +32,60 @@ start:
    call floppy_setup
    
    call print_newline
-
-;Load kernel into memory
-   mov ax, 0x4000
-   mov es, ax	;Set segment
-   mov ax, 17
-   mov bx, 0x0000
-   mov cx, 128; Load first 128 sectors of kernel (64k)
    
-load_loop:
-   push ax
+   call read_ext2_superblock
+   
+   mov ax, 2
+   call read_ext2_inode
+   mov bx, 0
+find_folder_entry:
    push bx
-   push cx
-   call floppy_read
-   pop cx
-   pop bx
-   pop ax
+   add bx, 4		; bx = &entry_size
+   mov dx, [es:bx] 	; dx = entry_size
+   push dx
+   add bx, 4		; bx = entry_name
+   mov si, boot_dir
+   call str_eq
+   cmp dx, 1
+   je folder_found
    
-   inc ax
-   add bx, 0x200
-   dec cx
-   jnz load_loop
+   pop dx
+   pop bx
+   add bx, dx		; bx = &next_entry
+   jmp find_folder_entry
+folder_found:
+   pop dx
+   pop bx
+   mov ax, [es:bx]
+
+   call read_ext2_inode
+   
+   ;We should now be in the boot directory
+   
+   mov bx, 0
+
+find_file_entry:
+   push bx
+   add bx, 4		; bx = &entry_size
+   mov dx, [es:bx] 	; dx = entry_size
+   push dx
+   add bx, 4		; bx = entry_name
+   mov si, kernel_file
+   call str_eq
+   cmp dx, 1
+   je file_found
+   
+   pop dx
+   pop bx
+   add bx, dx		; bx = &next_entry
+   jmp find_file_entry
+file_found:
+   pop dx
+   pop bx
+   mov ax, [es:bx]
+   call read_ext2_inode
+   
+   
    mov bx, 0x0010
    mov ax, [es:bx]
    mov [reg16], ax
@@ -79,13 +113,47 @@ load_loop:
    mov fs, ax
    mov gs, ax
    mov ss, ax
+   xchg bx, bx
    jmp dword 0x8:0x11000 ;Jump to second stage
+
+hang:
 halt:
    jmp halt
+   
+load_loop:
+   push ax
+   push bx
+   push cx
+   call floppy_read
+   pop cx
+   pop bx
+   pop ax
+   
+   inc ax
+   add bx, 0x200
+   dec cx
+   jnz load_loop
+   ret
+   
+str_eq:
+		mov ah, byte [es:bx]
+		inc bx
+		lodsb
+		cmp ah, al
+		jnz str_eq_fail
+		test ah, ah
+		jnz str_eq
+		mov dx, 1
+		ret
+str_eq_fail:
+		mov dx, 0
+		ret
 
 stage2_msg: db "Welcome to stage 2 of this bootloader", 10, 13, 0
 entering_kernel_msg: db "Jumping to kernel at: "
 entering_protected_msg: db "Entering protected mode and loading kernel at", 10, 13, 0
+kernel_file: db "nos.bin",0
+boot_dir: db "boot",0
 kernel_entry: dw 0,0
 times 4096-($-$$) db 0
 

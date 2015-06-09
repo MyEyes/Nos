@@ -1,6 +1,4 @@
 floppy_setup:
-	mov si, floppy_detect_msg
-	call sprint
 	
 	mov ah, 8 ;Set up call to detect drive geometry
 	mov dl, 0
@@ -8,28 +6,8 @@ floppy_setup:
 	
 	and cl, 0x3f
 	mov [floppy_noh], dh
+	inc byte [floppy_noh]
 	mov [floppy_spt], cl
-	
-	mov si, floppy_buffer_start_msg
-	call sprint
-	
-	mov dx, [floppy_buffer_start]
-	mov word [reg16], dx
-	call printreg16
-		
-	mov si, floppy_spt_msg
-	call sprint
-	
-	mov dh, [floppy_spt]
-	mov byte [reg8], dh
-	call printreg8
-	
-	mov si, floppy_noh_msg
-	call sprint
-	
-	mov dh, [floppy_noh]
-	mov byte [reg8], dh
-	call printreg8
 	
 	ret
 	
@@ -37,15 +15,19 @@ floppy_read:
 	;expect read address in ax
 	;expect target in bx
 	mov cl, byte [floppy_spt] 	;Load sectors per track into cl
-	div cl						;Figure out temp and sector
+	mov ch, 0
+	mov dx, 0
+	div cx						;Figure out temp and sector
 
-	inc ah
-	mov byte [floppy_sector], ah
-	and ax, 0x00FF ;Keep only lower bytes of ax
+	inc dl
+	mov byte [floppy_sector], dl
+	
 	mov cl, byte [floppy_noh]	;Load number of heads into cl
-	div cl						;Figure out head and cylinder
-	mov byte [floppy_head], al
-	mov byte [floppy_cylinder], ah 
+	mov dx, 0
+	mov ch, 0
+	div cx						;Figure out head and cylinder
+	mov byte [floppy_head], dl
+	mov word [floppy_cylinder], ax 
 	
 	jmp floppy_read_retry
 	
@@ -61,6 +43,8 @@ floppy_read_error:
 floppy_read_retry:
 	mov ax, 0x0201 					;Read 1 sector
 	mov cx, word [floppy_cylinder] 	;ch = cylinder & 0xff
+	mov ch, cl
+	shr cl, 2
 	and cx, 0xFFC0 	;cl =sector | ((cylinder>>2) & 0xC0)
 	mov ax, word [floppy_sector]
 	and ax, 0x003f
@@ -80,10 +64,6 @@ floppy_drive_reset:
 	ret
 
 floppy_buffer_start: dw stg1_end
-floppy_detect_msg: db 10,13,"Floppy Check",10,13, 0
-floppy_spt_msg: db "SPT: ",0
-floppy_noh_msg: db "NOH: ", 0
-floppy_buffer_start_msg: db "BUF: ", 0
 floppy_error_msg: db "Error: ", 0
 floppy_noh: db 0
 floppy_spt: db 0

@@ -9,28 +9,111 @@
 %include "floppy.inc"
 
 main:
+
+   
    xor ax, ax    ; make it zero
    mov ds, ax   ; DS=0
    mov es, ax	; ES=0
    mov ss, ax   ; stack starts at 0
-   mov sp, 0x9c00   ; 200h past code start
-      
-   mov si, newline
-   call sprint
-   
-   mov si, msg
-   call sprint
+   mov sp, 0x9c00   ; 400h past code start
 
    call floppy_setup
    
-   mov si, newline
-   call sprint
-      
-   mov ax, 0x1000
+   mov ax, 0x07c0
    mov es, ax	;Set segment
    mov ax, 1
+   mov bx, 0x200
+   mov cx, 1	;Load sector 1 of floppy, because that contains the rest of our bootloader
+   call load_loop
+   
+   call read_ext2_superblock
+   mov ax, 2
+   call read_ext2_inode
+  
+   ;es is set to the location of our inodes contents
+   ;And our inode is the root directory
    mov bx, 0
-   mov cx, 16	;Load first 16 sectors
+
+find_folder_entry:
+   push bx
+   add bx, 4		; bx = &entry_size
+   mov dx, [es:bx] 	; dx = entry_size
+   push dx
+   add bx, 4		; bx = entry_name
+   mov si, boot_dir
+   call str_eq
+   cmp dx, 1
+   je folder_found
+   
+   pop dx
+   pop bx
+   add bx, dx		; bx = &next_entry
+   jmp find_folder_entry
+folder_found:
+   pop dx
+   pop bx
+   mov ax, [es:bx]
+
+   call read_ext2_inode
+   ;We should now be in the boot directory
+   
+   mov bx, 0
+
+find_file_entry:
+   push bx
+   add bx, 4		; bx = &entry_size
+   mov dx, [es:bx] 	; dx = entry_size
+   push dx
+   add bx, 4		; bx = entry_name
+   mov si, stg2_file
+   call str_eq
+   cmp dx, 1
+   je file_found
+   
+   pop dx
+   pop bx
+   add bx, dx		; bx = &next_entry
+   jmp find_file_entry
+file_found:
+   pop dx
+   pop bx
+   mov ax, [es:bx]
+   call read_ext2_inode
+   
+   mov dx, 0x4000
+   mov ds, dx
+   mov dx, 0x1000
+   mov es, dx
+   mov si, 0
+   mov di, 0
+   mov cx, 0x4000
+cpy_stg2:
+   lodsb
+   stosb
+   dec cx
+   jnz cpy_stg2
+   xchg bx, bx
+   jmp start
+   jmp hang
+
+start:
+   jmp 0x1000:0 ;Jump to loaded code
+hang:
+   jmp hang
+   
+str_eq:
+		mov ah, byte [es:bx]
+		inc bx
+		lodsb
+		cmp ah, al
+		jnz str_eq_fail
+		test ah, ah
+		jnz str_eq
+		mov dx, 1
+		ret
+str_eq_fail:
+		mov dx, 0
+		ret
    
 load_loop:
    push ax
@@ -45,16 +128,15 @@ load_loop:
    add bx, 0x200
    dec cx
    jnz load_loop
-   
-   jmp 0x1000:0 ;Jump to loaded code
- 
-hang:
-   jmp hang
-   
-msg   db "Stage 1 bootloading",10, 13, 0
-newline db 10,13
+   ret
+
+stg2_file db "stage2.img", 0
+boot_dir db "boot", 0
+nf db "NF", 10, 13, 0
 times 510-($-$$) db 0
 db 0x55
 db 0xAA
+%include "ext2.inc"
+times 1024-($-$$) db 0
 stg1_end:
 ;==================================

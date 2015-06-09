@@ -2,6 +2,7 @@
 #define _FLOPPY_H
 #include <stdint.h>
 #include <stddef.h>
+#include <chs.h>
 typedef enum FloppyCommands
 {
 	READ_TRACK 	=					2,
@@ -96,10 +97,13 @@ int floppy_unlock();
 int floppy_reset();
 int floppy_recalibrate();
 int floppy_select_drive(uint8_t drive, char motor_on);
+int floppy_sense_interrupt();
 
 int floppy_check_media_present();
 int floppy_read(void*, void*, size_t);
+int floppy_read_to_buf(chs_addr_t, size_t);
 int floppy_write(void*, void*, size_t);
+int floppy_write_from_buf(chs_addr_t, size_t);
 
 int floppy_setup_dma();
 int floppy_set_dma_write();

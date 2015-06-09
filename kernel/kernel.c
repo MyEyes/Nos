@@ -23,6 +23,8 @@
 #include <clock.h>
 #include <debug.h>
 #include "drv/terminal_drv.h"
+#include "drv/ext2.h"
+#include <drv/devio.h>
 #include <floppy.h>
 
 #include <kernel.h>
@@ -60,11 +62,25 @@ void kern_test_floppy_drv()
 {
 	enable_interrupts();
 	floppy_init();
-	terminal_writestring("Initialized floppy driver\n");
-	terminal_writestring("Reading\n");
-	floppy_read((void*)0,(void*)0, 512);
-	terminal_writestring("Done reading\n");
+	
+	dev_desc_t floppy_desc;
+	floppy_desc.name[0] = 'f';
+	floppy_desc.name[1] = 'l';
+	floppy_desc.name[2] = 'o';
+	floppy_desc.name[3] = 'p';
+	floppy_desc.name[4] = 'p';
+	floppy_desc.name[5] = 'y';
+	floppy_desc.read_op = floppy_read;
+	terminal_writestring("SWITCH HERE\n");
 	bochs_break();
+	
+	ext2_hook_t ext2_hook = ext2_create_hook(&floppy_desc);
+	
+	terminal_writestring("\n");
+	terminal_writeuint16(ext2_hook.superblock->ext_sig);
+	if(!ext2_hook.valid)
+		terminal_writestring("Not a valid ext2 file system\n");
+	
 	uint64_t curr_time = clock_get_time();
 	while(1)
 	{
@@ -81,9 +97,9 @@ void kern_test_term_drv()
 {
 	bochs_break();
 	enable_interrupts();
-	//print("This is a test!\n");
-	//print("If you see this message\n");
-	//print("Then rudimentary IPC works\n");
+	print("This is a test!\n");
+	print("If you see this message\n");
+	print("Then rudimentary IPC works\n");
 	while(1);
 }
 
@@ -93,13 +109,12 @@ void kernel_run()
 	
 	set_idt_desc(IRQ_OFFSET+0x01, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8); //Disable keyboard interrupt	
 	
-	//start_terminal_drv();
+	start_terminal_drv();
 	
 	task_t* floppy_test = create_task(kern_test_floppy_drv, 0, 0, GDT_KERNEL_DATA_SEG, GDT_KERNEL_CODE_SEG, GDT_KERNEL_DATA_SEG, 0);
-	//schd_task_add(floppy_test);
-	scheduler_spawn(floppy_test);
-	//task_t* term_test = create_task(kern_test_term_drv, 0, 0, GDT_KERNEL_DATA_SEG, GDT_KERNEL_CODE_SEG, GDT_KERNEL_DATA_SEG, 0);
-	//scheduler_spawn(term_test);
+	schd_task_add(floppy_test);
+	task_t* term_test = create_task(kern_test_term_drv, 0, 0, GDT_KERNEL_DATA_SEG, GDT_KERNEL_CODE_SEG, GDT_KERNEL_DATA_SEG, 0);
+	scheduler_spawn(term_test);
 	
 	bochs_break();
 	terminal_writestring("Back in the kernel\n\n");

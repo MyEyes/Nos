@@ -2,7 +2,7 @@
 
 chs_addr_t logical_to_chs(void* addr, chs_info_t info)
 {
-	uint32_t iaddr = (uint32_t) addr;
+	uint32_t iaddr = (uint32_t) addr/info.blocksize;
 	
 	chs_addr_t result;
 	

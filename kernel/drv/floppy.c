@@ -1,11 +1,11 @@
 #include <floppy.h>
 #include <portio.h>
 #include <idt.h>
-#include <chs.h>
 #include <dma.h>
-#include <terminal.h>
 #include <kalloc.h>
 #include <clock.h>
+#include <string.h>
+#include <terminal.h>
 
 volatile char received_IRQ6 = 0;
 uint8_t floppy_ver = 0;
@@ -19,7 +19,6 @@ chs_info_t chs_info;
 
 void floppy_int_hnd()
 {
-	terminal_writestring("IRQ6\n");
 	received_IRQ6 = 1;
 }
 
@@ -29,13 +28,8 @@ int floppy_issue_command(floppy_cmd cmd, uint8_t argc, char* argv, uint8_t resc,
 	uint8_t status = inb(MAIN_STATUS_REGISTER);
 	if((status & (RQM|DIO))!=RQM)
 	{
-		terminal_writestring("Not ready\n");
-		terminal_writeuint8(cmd);
-		terminal_writeuint8(status);
-		terminal_writestring("\n");
 		return -1;
 	}
-	bochs_break();
 	//Issue command
 	outb(DATA_FIFO, cmd);
 	//Copy commands, always wait until last byte has been processed
@@ -55,7 +49,6 @@ int floppy_issue_command(floppy_cmd cmd, uint8_t argc, char* argv, uint8_t resc,
 	
 	if(cmd == RECALIBRATE)
 	{
-		bochs_break();
 		return 0;
 	}
 		
@@ -73,7 +66,6 @@ int floppy_issue_command(floppy_cmd cmd, uint8_t argc, char* argv, uint8_t resc,
 	status = inb(MAIN_STATUS_REGISTER);
 	if((status & (RQM|DIO|CB) ) != RQM)
 	{
-		terminal_writestring("Command error\n");
 		return -1;
 	}
 	return 0;
@@ -185,7 +177,6 @@ int floppy_recalibrate()
 		if(floppy_issue_command(RECALIBRATE, 1, &current_drive, 0, (char*)0, 1) >= 0)
 		{
 			int st0 = floppy_sense_interrupt();
-			terminal_writeuint32(st0);
 			if(st0>0 && st0 & 0x2000)
 				return 0;
 		}
@@ -194,27 +185,67 @@ int floppy_recalibrate()
 }
 
 int floppy_read(void* flp_addr, void* buf, size_t num_bytes)
-{
-	if(num_bytes>=floppy_buf_size)
+{	
+	chs_addr_t chs_addr = logical_to_chs(flp_addr, chs_info);
+	
+	//Figure out how many bytes at the beginning of the sector we should ignore
+	uint32_t offset = ((uint32_t)flp_addr) % chs_info.blocksize;
+	
+	//Figure out how much we want to read into our buffer
+	size_t to_read = num_bytes + offset;
+	
+	if(to_read >= floppy_buf_size)
+		to_read = floppy_buf_size;
+	
+	//Read into floppy buffer
+	if(floppy_read_to_buf(chs_addr, to_read)<0)
 		return -1;
+	
+	//Copy from floppy buffer to destination
+	memcpy(buf, floppy_buf+offset, to_read-offset);
+	
+	//If we still need to read more, repeat the process
+	if(to_read-offset<num_bytes)
+		return floppy_read(flp_addr + to_read - offset, buf + to_read - offset, num_bytes - to_read + offset);
+	return 0;
+}
+
+int floppy_read_to_buf(chs_addr_t chs_addr, size_t num_bytes)
+{
+	//Figure out how much we want to read into our buffer
+	size_t to_read = num_bytes;
+	if(to_read >= floppy_buf_size)
+		to_read = floppy_buf_size;;
+	
 	char buffer[8];
 	char result[7];
 	
-	chs_addr_t chs_addr = logical_to_chs(flp_addr, chs_info);
+	terminal_writestring("Reading from: ");
+	terminal_writeuint16(chs_addr.head);
+	terminal_writeuint16(chs_addr.cylinder);
+	terminal_writeuint16(chs_addr.sector);
+	terminal_writestring("\n");
+	
 	buffer[0] = chs_addr.head<<2 | current_drive;
 	buffer[1] = chs_addr.cylinder;
 	buffer[2] = chs_addr.head;
 	buffer[3] = chs_addr.sector;
 	buffer[4] = 2;
-	buffer[5] = (num_bytes+chs_info.blocksize)/chs_info.blocksize;
+	buffer[5] = (num_bytes+chs_info.blocksize-1)/chs_info.blocksize;
 	buffer[6] = 0x1b;
 	buffer[7] = 0xff;
 	
-	terminal_writeuint8(*((uint8_t*)floppy_buf));
 	floppy_set_dma_write();
-	floppy_issue_command(READ_DATA|OPT_MT|OPT_MF, 8, buffer, 7, result, 1);
-	terminal_writeuint8(*((uint8_t*)floppy_buf));
-	return 0;
+	for(int i = 4; i>0; --i)
+	{
+		if(floppy_issue_command(READ_DATA|OPT_MT|OPT_MF, 8, buffer, 7, result, 1)>=0)
+		{
+			//if there are no errors set in st1
+			if(result[1]==0)
+				return 0;
+		}
+	}
+	return -1;
 }
 
 int floppy_setup_dma()
@@ -264,12 +295,9 @@ int floppy_init()
 		return -1;
 	
 	floppy_reset();
-	terminal_writestring("Starting calibration\n");
-	bochs_break();
 	if(floppy_recalibrate()<0)
 		return -1;
 	
-	terminal_writestring("Done recalibrating\n");
 	floppy_setup_dma();
 	
 	return 0;

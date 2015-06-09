@@ -11,4 +11,4 @@ load:
 	jmp eax
 hang:
 	jmp hang
-	times 4096-($-$$) db 0
+	times 2048-($-$$) db 0

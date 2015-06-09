@@ -54,12 +54,6 @@ hexloop8:
    call sprint
  
    ret
-   
-print_newline:
-	mov si, newline
-	call sprint
-	ret
-   
 xpos   db 0
 ypos   db 0
 hexstr   db '0123456789ABCDEF'

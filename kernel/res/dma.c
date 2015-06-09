@@ -119,13 +119,9 @@ void dma_set_mode(dma_mode mode, uint8_t chn)
 
 void dma_map_to_mem(void* addr, size_t size, uint8_t chn)
 {
-	terminal_writestring("Trying to map dma to ");
-	terminal_writeuint32((uint32_t)addr);
-	terminal_writestring("\n");
 	uint32_t uiaddr = (uint32_t)addr;
 	if(uiaddr<KMEM_DMA_EXCL_LOC || uiaddr+size>KMEM_DMA_EXCL_LIMIT)
 		return;
-	bochs_break();
 	dma_mask_chn(chn);
 	dma_set_addr(addr, chn);
 	dma_set_cnt(size, chn);
