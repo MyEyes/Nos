@@ -31,6 +31,7 @@ void terminal_setcolor(uint8_t color);
 void terminal_putchar(char c);
 void terminal_putentryat(char c, uint8_t color, size_t x, size_t y);
 void terminal_writestring(const char* data);
+void terminal_writestring_l(const char* data, uint8_t max_length);
 void terminal_writeuint8(const uint8_t data);
 void terminal_writeuint16(const uint16_t data);
 void terminal_writeuint32(const uint32_t data);

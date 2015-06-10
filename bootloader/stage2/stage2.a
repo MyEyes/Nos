@@ -41,9 +41,12 @@ start:
 find_folder_entry:
    push bx
    add bx, 4		; bx = &entry_size
-   mov dx, [es:bx] 	; dx = entry_size
+   mov dx, [es:bx] 	; dx = entry_size   
+   add bx, 2
+   mov cl, [es:bx]
+   mov ch, 0
    push dx
-   add bx, 4		; bx = entry_name
+   add bx, 2		; bx = entry_name
    mov si, boot_dir
    call str_eq
    cmp dx, 1
@@ -68,8 +71,11 @@ find_file_entry:
    push bx
    add bx, 4		; bx = &entry_size
    mov dx, [es:bx] 	; dx = entry_size
+   add bx, 2
+   mov cl, [es:bx]
+   mov ch, 0
    push dx
-   add bx, 4		; bx = entry_name
+   add bx, 2		; bx = entry_name
    mov si, kernel_file
    call str_eq
    cmp dx, 1
@@ -141,7 +147,7 @@ str_eq:
 		lodsb
 		cmp ah, al
 		jnz str_eq_fail
-		test ah, ah
+		dec cx
 		jnz str_eq
 		mov dx, 1
 		ret

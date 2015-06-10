@@ -219,12 +219,13 @@ int floppy_read_to_buf(chs_addr_t chs_addr, size_t num_bytes)
 	
 	char buffer[8];
 	char result[7];
-	
+	/*
 	terminal_writestring("Reading from: ");
 	terminal_writeuint16(chs_addr.head);
 	terminal_writeuint16(chs_addr.cylinder);
 	terminal_writeuint16(chs_addr.sector);
 	terminal_writestring("\n");
+	*/
 	
 	buffer[0] = chs_addr.head<<2 | current_drive;
 	buffer[1] = chs_addr.cylinder;
@@ -250,7 +251,7 @@ int floppy_read_to_buf(chs_addr_t chs_addr, size_t num_bytes)
 
 int floppy_setup_dma()
 {
-	floppy_buf_size = chs_info.num_sectors * chs_info.blocksize;
+	floppy_buf_size = chs_info.blocksize;
 	floppy_buf = kalloc_dma_mem(floppy_buf_size);
 	dma_map_to_mem(floppy_buf, floppy_buf_size, floppy_dma_channel);
 	return 0;

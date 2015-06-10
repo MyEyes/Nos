@@ -16,3 +16,12 @@ cd ..
 dd if=stage2.bin of=stage2.img obs=512
 dd if=stage2pro.bin of=stage2.img seek=8 obs=512
 cp stage2.img /cygdrive/f/boot
+
+cd ..
+./updateSysRootIncludes.sh
+cd kernel
+make all
+mv nos ../nos.bin
+
+cd ..
+cp nos.bin /cygdrive/f/boot

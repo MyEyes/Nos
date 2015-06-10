@@ -90,6 +90,13 @@ void terminal_writestring(const char* data)
 		terminal_putchar(data[i]);
 }
 
+void terminal_writestring_l(const char* data, uint8_t len)
+{
+	size_t datalen = len;
+	for ( size_t i = 0; i < datalen; i++ )
+		terminal_putchar(data[i]);
+}
+
 void terminal_writebyte(const char c)
 {
 	static char* buf = "00";

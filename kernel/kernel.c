@@ -71,15 +71,40 @@ void kern_test_floppy_drv()
 	floppy_desc.name[4] = 'p';
 	floppy_desc.name[5] = 'y';
 	floppy_desc.read_op = floppy_read;
-	terminal_writestring("SWITCH HERE\n");
-	bochs_break();
 	
 	ext2_hook_t ext2_hook = ext2_create_hook(&floppy_desc);
 	
 	terminal_writestring("\n");
-	terminal_writeuint16(ext2_hook.superblock->ext_sig);
+	terminal_writestring("\n");
 	if(!ext2_hook.valid)
 		terminal_writestring("Not a valid ext2 file system\n");
+	else
+		terminal_writestring("Found valid ext2 file system\n");
+	
+	if(ext2_read_inode(&ext2_hook, 2)<0)
+		terminal_writestring("Error reading root directory\n");
+	
+	char* buffer = (char*) kalloc(1024);
+	ext2_read_inode_content(&ext2_hook, 2, 0, buffer, 1024);
+	uint16_t offset = 0;
+	int inode = -1;
+	
+	while(offset<1024)
+	{
+		ext2_dir_entry_t* curr_dir = (ext2_dir_entry_t*)(buffer+offset);
+		terminal_writeuint16(offset);
+		terminal_writeuint32(curr_dir->inode);
+		terminal_writeuint16(curr_dir->total_size);
+		terminal_writestring_l(&curr_dir->name, curr_dir->name_len);
+		terminal_writestring("\n");
+		if(curr_dir->name == 't')
+			inode = curr_dir->inode;
+		offset+=curr_dir->total_size;
+	}
+	terminal_writestring("\n");
+	ext2_read_inode_content(&ext2_hook, inode, 0, buffer, 1024);
+	bochs_break();
+	terminal_writestring_l(buffer, 100);
 	
 	uint64_t curr_time = clock_get_time();
 	while(1)

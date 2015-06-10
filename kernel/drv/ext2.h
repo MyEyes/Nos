@@ -7,6 +7,7 @@
 #define EXT2_SIGNATURE 0xef53
 #define EXT2_SUPERBLOCK_SIZE 0x400
 #define EXT2_SUPERBLOCK_LOC ((void*)0x400)
+#define EXT2_BLOCK_BUFFER_SIZE 12
 //#define EXT2_SUPERBLOCK_LOC ((void*)0x32400)
 
 typedef struct
@@ -67,6 +68,7 @@ typedef struct
 	uint16_t unused_blks;
 	uint16_t unused_inodes;
 	uint16_t dir_count;
+	char 	 unused[14];
 } ext2_blk_group_desc_t;
 
 typedef struct
@@ -158,10 +160,25 @@ typedef struct
 {
 	char valid;
 	dev_desc_t* device;
+	
+	uint16_t next_buffer;
+	uint16_t buffer_index[EXT2_BLOCK_BUFFER_SIZE];
+	char* buffer;
+	
+	uint32_t blocksize;
+	uint16_t inode_size;
+	
+	uint32_t curr_inode;
+	ext2_inode_t* inode_buffer;
+	
 	ext2_superblock_t* superblock;
 	ext2_superblock_ext_t* superblock_ext;
 	ext2_blk_group_desc_t* blk_groups;
 } ext2_hook_t;
 
-ext2_hook_t ext2_create_hook(dev_desc_t* dev);
+ext2_hook_t ext2_create_hook(dev_desc_t*);
+int ext2_read_inode(ext2_hook_t*, uint32_t);
+int ext2_read_blk(ext2_hook_t*, uint32_t);
+int ext2_read_inode_blk(ext2_hook_t*, uint32_t, uint32_t);
+int ext2_read_inode_content(ext2_hook_t*, uint32_t, uint32_t, void*, size_t);
 #endif
