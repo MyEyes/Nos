@@ -26,6 +26,7 @@
 #include "drv/ext2.h"
 #include <drv/devio.h>
 #include <floppy.h>
+#include <elf.h>
 
 #include <kernel.h>
 
@@ -84,7 +85,7 @@ void kern_test_floppy_drv()
 	if(ext2_read_inode(&ext2_hook, 2)<0)
 		terminal_writestring("Error reading root directory\n");
 	
-	char* buffer = (char*) kalloc(1024);
+	char* buffer = (char*) kalloc(1024*4);
 	ext2_read_inode_content(&ext2_hook, 2, 0, buffer, 1024);
 	uint16_t offset = 0;
 	int inode = -1;
@@ -92,19 +93,25 @@ void kern_test_floppy_drv()
 	while(offset<1024)
 	{
 		ext2_dir_entry_t* curr_dir = (ext2_dir_entry_t*)(buffer+offset);
+		/*
 		terminal_writeuint16(offset);
 		terminal_writeuint32(curr_dir->inode);
 		terminal_writeuint16(curr_dir->total_size);
 		terminal_writestring_l(&curr_dir->name, curr_dir->name_len);
 		terminal_writestring("\n");
-		if(curr_dir->name == 't')
+		*/
+		if(curr_dir->name == 's')
 			inode = curr_dir->inode;
 		offset+=curr_dir->total_size;
 	}
-	terminal_writestring("\n");
-	ext2_read_inode_content(&ext2_hook, inode, 0, buffer, 1024);
+	//terminal_writestring("\n");
+	ext2_read_inode_content(&ext2_hook, inode, 0, buffer, 1024*4);
 	bochs_break();
-	terminal_writestring_l(buffer, 100);
+	task_t* task = elf_create_proc((elf_header_t*)buffer);
+	terminal_writestring("Starting usermode task\n");
+	bochs_break();
+	scheduler_spawn(task);
+	//schd_task_add(task);
 	
 	uint64_t curr_time = clock_get_time();
 	while(1)
@@ -112,7 +119,6 @@ void kern_test_floppy_drv()
 		uint64_t ct = clock_get_time();
 		if(ct-curr_time>0x40000000000)
 		{
-			bochs_break();
 			curr_time = ct;
 		}
 	}
@@ -120,7 +126,6 @@ void kern_test_floppy_drv()
 
 void kern_test_term_drv()
 {
-	bochs_break();
 	enable_interrupts();
 	print("This is a test!\n");
 	print("If you see this message\n");

@@ -24,6 +24,7 @@
 #define FREE_IRQ_START IRQ_OFFSET+0x10
 
 #define PROC_START 0x40
+#define PROC_EXIT 0x41
 
 #define DRV_START 0x80
 

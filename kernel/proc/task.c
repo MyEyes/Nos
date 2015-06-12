@@ -48,16 +48,22 @@ page_dir_t* create_task_pagedir(void* memstart, void*  memend, task_t* task)
 	vmem_size+=page_entries*PAGE_SIZE; //Additional size we need for page dir entries
 	
 	void* vmem = kalloc(vmem_size);
+	memzero(vmem, vmem_size);
 	//Create page directory
 	page_dir_t* page_dir = page_dir_create(vmem);
 	create_kernel_pages(page_dir);
 	
+	terminal_writestring("Mapping memory between: ");
+	terminal_writeuint32((uint32_t)memstart);
+	terminal_writeuint32((uint32_t)memend);
+	terminal_writestring("\n");
 	//Create page_tables for tasks memory region
 	for(uint32_t addr = ((uint32_t)memstart)&0xFFFFF000; addr<=(uint32_t)memend; addr+=PAGE_SIZE)
 	{
 			uint32_t iv_addr = (uint32_t) addr;
 			uint16_t iv_te = iv_addr >> 22;		//Upper 10bits
 			uint32_t offset = 1+(iv_te-start); 	//Start is still the index of our first page table entry
+			
 			map_dir(page_dir,					//Map directory entry
 			(void*)addr,						//For current virtual address
 			(void*)((vmem+(page_entries+1)*PAGE_SIZE)-start_addr+iv_addr), //To physical address that corresponds to correct kernel virtual address
@@ -96,8 +102,9 @@ task_t* create_task(void (*entry)(), void* memstart, void* memend,uint16_t ss, u
 	//If we run as kernel we don't need to/should change our page dir
 	if(new_task->level)
 	{
-		page_dir_t* proc_page_dir = create_task_pagedir(memstart, memend, new_task);
+		page_dir_t* proc_page_dir = create_task_pagedir(memstart, memend+PAGE_SIZE, new_task);
 		new_task->cr3 = proc_page_dir;
+		new_task->esp = (((uint32_t)new_task->ker_mem_end + PAGE_SIZE - 1)&0xFFFFF000)+PAGE_SIZE;
 	}
 	else
 		new_task->cr3 = 0;
@@ -110,7 +117,8 @@ task_t* create_task(void (*entry)(), void* memstart, void* memend,uint16_t ss, u
 	else
 		stack->flags = 0;
 	
-	stack->esp = new_task->esp;
+	stack->esp = (((uint32_t)memend + PAGE_SIZE - 1)&0xFFFFF000)+PAGE_SIZE;
+	stack->eax = new_task->pid;
 	stack->cs = cs;
 	stack->ds = ds;
 	stack->es = ds;

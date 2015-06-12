@@ -3,6 +3,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+extern void exit(int);
 void abort(void);
 int atexit(void (*)(void));
 int atoi(const char*);

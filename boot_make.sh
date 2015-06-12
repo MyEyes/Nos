@@ -15,7 +15,7 @@ nasm protected.a -f bin -o ../stage2pro.bin
 cd ..
 dd if=stage2.bin of=stage2.img obs=512
 dd if=stage2pro.bin of=stage2.img seek=8 obs=512
-cp stage2.img /cygdrive/f/boot
+cp stage2.img ../sysroot/boot
 
 cd ..
 ./updateSysRootIncludes.sh
@@ -24,4 +24,9 @@ make all
 mv nos ../nos.bin
 
 cd ..
-cp nos.bin /cygdrive/f/boot
+cp nos.bin sysroot/boot
+
+cp sysroot/boot/nos.bin /cygdrive/f/boot/
+cp sysroot/boot/stage2.img /cygdrive/f/boot/
+
+#cp -R sysroot /cygdrive/f/

@@ -3,7 +3,7 @@
 uint32_t acquire_lock(lock_t* lock)
 {
 	//Try to get the lock until you get it
-	while(!__sync_bool_compare_and_swap(&lock->locked,0,1));
+	while(!__sync_bool_compare_and_swap(&lock->locked,0,1))terminal_writestring("L");
 	
 	return 1;
 }

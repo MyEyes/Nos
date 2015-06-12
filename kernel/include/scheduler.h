@@ -15,7 +15,7 @@ struct task_list_st
 void scheduler_spawn(task_t* task);
 void schedule_kill();
 void schedule_task_stop();
-extern void resume_task();
+extern __attribute__((noreturn)) void resume_task();
 
 extern task_t* kernel_task;
 
@@ -23,6 +23,7 @@ void schd_task_add(task_t* task);
 void schd_task_del(task_t* task);
 void init_scheduler();
 void schedule();
+void __attribute__((noreturn)) schedule_exit();
 pid_t get_current_pid();
 task_t* get_current_task();
 

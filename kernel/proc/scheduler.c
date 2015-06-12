@@ -19,6 +19,7 @@ task_t* next_task;
 uint8_t schedule_switch_flag;
 
 extern void (*schedule_handler)();
+extern void (*exit_handler)();
 
 void scheduler_spawn(task_t* task)
 {
@@ -55,6 +56,7 @@ void signal(pid_t pid)
 void init_scheduler()
 {
 	set_idt_desc(IRQ_OFFSET+0x00, (uint32_t)&schedule_handler, 0, IntGate32, 0x08);
+	set_idt_desc(PROC_EXIT, (uint32_t)&exit_handler, 3, IntGate32, 0x08);
 	//Initialize jump array
 	tasks[0] = (void*)SCHEDULER_MAX_TASKS;
 	curr_task = 0;
@@ -119,6 +121,7 @@ void schd_task_del(task_t* task)
 		}
 	}
 }
+
 void schedule_kill()
 {
 	curr_task->state = TSK_Terminated;
@@ -131,6 +134,20 @@ void schedule_kill()
 	curr_task = next_task;
 	terminal_writestring("Resuming\n");
 	bochs_break();
+	resume_task();
+}
+
+void schedule_exit()
+{
+	curr_task->state = TSK_Exited;
+	curr_task->time_slice = 0;
+	task_context_t* stack = (task_context_t*)(curr_task->esp);
+	int retval = stack->eax;
+	terminal_writestring("Task exited ");
+	terminal_writeuint32(retval);
+	terminal_writestring("\n");
+	schedule();
+	curr_task = next_task;
 	resume_task();
 }
 

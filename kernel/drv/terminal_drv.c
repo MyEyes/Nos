@@ -37,6 +37,7 @@ void terminal_drv_run()
 	{
 		//If we got a message we print it
 		//terminal_writestring("(Checking for messages)\n");
+		
 		if(!get_ipc_message(term_port_id, &curr_msg, buffer, 4000))
 		{
 			terminal_writestring(buffer);
@@ -44,7 +45,7 @@ void terminal_drv_run()
 		else
 		{
 			//terminal_writestring("(Going to sleep)\n");
-			sleep();
+			//sleep();
 		}
 	}
 }

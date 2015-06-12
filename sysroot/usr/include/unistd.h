@@ -11,6 +11,7 @@ int execvp(const char*, char* const[]);
 void sleep();
 void signal(pid_t);
 pid_t fork(void);
+pid_t get_current_pid();
 #ifdef __cplusplus
 }
 #endif

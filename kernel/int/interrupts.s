@@ -66,6 +66,13 @@ page_fault_handler:
 	popa
 	jmp resume_task
 	
+.global exit_handler
+exit_handler:
+	call stop_task
+	call schedule_exit
+	add $4, %esp //Popping eax off of return value
+	jmp resume_task
+	
 .global kernel_panic_handler
 kernel_panic_handler:
 	xchg %bx, %bx

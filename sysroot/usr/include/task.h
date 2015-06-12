@@ -8,7 +8,8 @@ typedef enum
 	TSK_Running,
 	TSK_Waiting,
 	TSK_Sleeping,
-	TSK_Terminated
+	TSK_Terminated,
+	TSK_Exited
 } task_state;
 
 typedef struct

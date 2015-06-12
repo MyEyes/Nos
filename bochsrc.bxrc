@@ -30,7 +30,7 @@ private_colormap: enabled=0
 clock: sync=none, time0=local, rtc_sync=0
 # no cmosimage
 # no loader
-log: -
+log: bochs_log.txt
 logprefix: %t%e%d
 debug: action=ignore
 info: action=report

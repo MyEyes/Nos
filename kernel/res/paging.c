@@ -134,12 +134,12 @@ void paging_handle_pagefault(void* vAddr, uint32_t err_code)
 	//present	write	user	res_write	instruction
 	if(!(err_code&1)) //If the fault was caused because a page wasn't present
 	{
-		void* pAddr = pmem_get_free_page();
-		kernel_map_page(vAddr,pAddr, KERNEL_PAGE_FLAGS);
+		//void* pAddr = pmem_get_free_page();
+		kernel_map_page(vAddr,vAddr, KERNEL_PAGE_FLAGS);
 		int16_t owner = PMEM_KERNEL_OWNER;
 		if((err_code&0x4))
 			owner = get_current_pid();
-		pmem_mod((uint32_t)pAddr, owner, PMEM_MAPPED);
+		pmem_mod((uint32_t)vAddr, owner, PMEM_MAPPED);
 	}
 	else
 	{
@@ -157,7 +157,7 @@ void create_kernel_pages(page_dir_t* page_dir)
 	tbl<(KMEM_KERNEL_LIMIT>>22);
 	tbl++)
 	{
-		page_dir_entry_create(page_dir->entries+tbl, (void*)(KMEM_PG_TABLE_LOC+tbl*PAGE_SIZE), KERNEL_PAGE_FLAGS|PG_Global);
+		page_dir_entry_create(page_dir->entries+tbl, (void*)(KMEM_PG_TABLE_LOC+tbl*PAGE_SIZE), KERNEL_PAGE_FLAGS|PG_Global|PG_User);
 	}
 }
 
