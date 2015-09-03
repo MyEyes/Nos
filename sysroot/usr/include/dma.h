@@ -82,6 +82,7 @@ void dma_reset_flipflop(uint8_t);
 void dma_set_mode(dma_mode, uint8_t);
 void dma_map_to_mem(void*, size_t, uint8_t);
 void dma_set_addr(void*, uint8_t);
+void dma_set_pg_addr(void*, uint8_t);
 void dma_set_cnt(size_t, uint8_t);
 void dma_get_lock();
 void dma_release_lock();

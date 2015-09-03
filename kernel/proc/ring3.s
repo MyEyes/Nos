@@ -31,11 +31,11 @@ stop_task:
 	
 	jz stop_kern_stop			//If 0 we aren't switching rings
 	
-	mov 7*4(%esp), %esi			//Store return esp in %esi
-	sub $20, %esi				//Move down 5 dwords
-	mov %esi, 12(%esp)			//overwrite stored esp with tasks esp
-	mov %esp, %edi				//Store %esp in %edi
-	add $4*4, %edi				//Move up to where iret header is
+	mov 7*4(%esp), %edi			//Store return esp in %esi
+	sub $20, %edi				//Move down 5 dwords
+	mov %edi, 12(%esp)			//overwrite stored esp with tasks esp
+	mov %esp, %esi				//Store %esp in %edi
+	add $4*4, %esi				//Move up to where iret header is
 	
 	mov %esp, %eax
 	add $16, %eax

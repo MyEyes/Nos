@@ -39,3 +39,9 @@ install:
 	cp crt0.o ../sysroot/usr/lib/crt0.o
 	cp crti.o ../sysroot/usr/lib/crti.o
 	cp crtn.o ../sysroot/usr/lib/crtn.o
+	cp libc.a /usr/lib/cross/libc.a
+	cp crt0.o /usr/lib/cross/crt0.o
+	cp crti.o /usr/lib/cross/crti.o
+	cp crtn.o /usr/lib/cross/crtn.o
+test-install:
+	cp test/stdtest.c.o /cygdrive/f/stdtest.c.o

@@ -37,10 +37,13 @@ int open_port(uint32_t);
 int close_port(uint32_t);
 int free_port(uint32_t);
 
+int get_free_port();
+
 void* get_ipc_res_buffer(size_t);
 
 int get_ipc_message(uint32_t, ipc_msg_hdr_t* header, void* data, size_t numbytes);
 int send_to_buffer(ipc_buffer_t*,uint32_t, const void*, size_t);
 int send_to_port(uint32_t,uint32_t, const void*, size_t);
+int yield_control_to_port(uint32_t port);
 int copy_to_buffer(ipc_buffer_t*, const void*, size_t);
 #endif

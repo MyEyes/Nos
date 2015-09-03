@@ -44,7 +44,7 @@ page_dir_t* create_task_pagedir(void* memstart, void*  memend, task_t* task)
 	
 	start = start>>22;		  //First page_entry in task proc_dir
 	end = end>>22;			  //Last page_entry in task proc_dir
-	uint32_t page_entries = ((end-start)+1);
+	uint32_t page_entries = ((end-start)+2); //Add an extra page so that we have one page for the heap at least
 	vmem_size+=page_entries*PAGE_SIZE; //Additional size we need for page dir entries
 	
 	void* vmem = kalloc(vmem_size);
@@ -53,12 +53,12 @@ page_dir_t* create_task_pagedir(void* memstart, void*  memend, task_t* task)
 	page_dir_t* page_dir = page_dir_create(vmem);
 	create_kernel_pages(page_dir);
 	
-	terminal_writestring("Mapping memory between: ");
-	terminal_writeuint32((uint32_t)memstart);
-	terminal_writeuint32((uint32_t)memend);
-	terminal_writestring("\n");
+	//terminal_writestring("Mapping memory between: ");
+	//terminal_writeuint32((uint32_t)memstart);
+	//terminal_writeuint32((uint32_t)memend);
+	//terminal_writestring("\n");
 	//Create page_tables for tasks memory region
-	for(uint32_t addr = ((uint32_t)memstart)&0xFFFFF000; addr<=(uint32_t)memend; addr+=PAGE_SIZE)
+	for(uint32_t addr = ((uint32_t)memstart)&0xFFFFF000; addr<=(uint32_t)memend+2*PAGE_SIZE; addr+=PAGE_SIZE)
 	{
 			uint32_t iv_addr = (uint32_t) addr;
 			uint16_t iv_te = iv_addr >> 22;		//Upper 10bits
@@ -76,11 +76,12 @@ page_dir_t* create_task_pagedir(void* memstart, void*  memend, task_t* task)
 	
 	uint32_t first_tbl = ((uint32_t)vmem)>>22;
 	//Map page dir entries in process as well as processes pagedir itself to their corresponding kernel tables
-	for(uint32_t tbl = 0; tbl<page_entries+1; tbl++)
+	for(uint32_t tbl = 0; tbl<page_entries+2; tbl++)
 	{
 			uint16_t ctbl = tbl + first_tbl;
 			page_dir_entry_create(page_dir->entries+ctbl, (void*)(KMEM_PG_TABLE_LOC+ctbl*PAGE_SIZE), PG_Present|PG_RW|PG_WriteThrough|PG_Global);
 	}
+	
 	
 	return page_dir;
 }
@@ -116,8 +117,11 @@ task_t* create_task(void (*entry)(), void* memstart, void* memend,uint16_t ss, u
 		stack->flags = 512;
 	else
 		stack->flags = 0;
+	//Create Stack in second to last memory page
+	stack->esp = (((uint32_t)memend + PAGE_SIZE - 1)&0xFFFFF000)+PAGE_SIZE-1;
+	//Create Heap growing the other way in page after that
+	stack->ebx = (((uint32_t)memend + PAGE_SIZE - 1)&0xFFFFF000)+PAGE_SIZE;
 	
-	stack->esp = (((uint32_t)memend + PAGE_SIZE - 1)&0xFFFFF000)+PAGE_SIZE;
 	stack->eax = new_task->pid;
 	stack->cs = cs;
 	stack->ds = ds;

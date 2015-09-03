@@ -4,6 +4,7 @@
 _start:
 	# Set up end of the stack frame linked list.
 	mov %eax, (curr_pid)
+	mov %ebx, (base_seg)
 	mov $0, %ebp
 	push %ebp # eip=0
 	push %ebp # ebp=0
@@ -17,7 +18,7 @@ _start:
 	call std_init
  
 	# Run the global constructors.
-	call _init
+	#call _init
  
 	# Restore argc and argv.
 	pop %edi
@@ -28,5 +29,7 @@ _start:
 	xchg %bx, %bx
 	# Terminate the process with the exit code.
 	movl %eax, %edi
+	push %eax
+	push %eax
 	jmp exit
 	

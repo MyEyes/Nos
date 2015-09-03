@@ -9,6 +9,7 @@ void* memzero(void*, size_t);
 void* memset(void*, int, size_t);
 char* strcpy(char*, const char*);
 size_t strlen(const char*);
+int strcmp(const char*, const char*);
 #ifdef __cplusplus
 }
 #endif

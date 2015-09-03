@@ -1,4 +1,5 @@
 #include <scheduler.h>
+#include <int.h>
 #include <idt.h>
 #include <task.h>
 #include <debug.h>
@@ -19,13 +20,14 @@ task_t* next_task;
 uint8_t schedule_switch_flag;
 
 extern void (*schedule_handler)();
+extern void (*yield_handler)();
 extern void (*exit_handler)();
 
 void scheduler_spawn(task_t* task)
 {
 	schd_task_add(task);
 	next_task=task;
-	__asm__ ("int $0x40");
+	call_int(PROC_START);
 }
 
 void sleep()
@@ -33,11 +35,44 @@ void sleep()
 	//Set task to sleeping
 	//And invoke scheduler interrupt
 	curr_task->state = TSK_Sleeping;
-	curr_task->time_slice = -1;
-	__asm__("int $0x20");
+	if(curr_task->lender_task && curr_task->lender_task->state== TSK_Waiting)
+	{
+		next_task = curr_task->lender_task;
+		next_task->time_slice = curr_task->time_slice;
+		curr_task->lender_task=(task_t*)0;
+		curr_task->time_slice = -1;
+		call_int(PROC_START);
+	}
+	else
+	{
+		curr_task->time_slice = -1;
+		call_int(TIMER); //The scheduler hooks the timer interrupts
+	}
+}
+
+void yield_to()
+{
+	task_context_t* stack = (task_context_t*)(curr_task->esp);
+	int pid = stack->eax;
+	task_t* tsk = get_task(pid);
+	if(tsk)
+	{
+		task_t* ct = get_current_task();
+		tsk->lender_task = ct;
+		tsk->state = TSK_Waiting;
+		tsk->time_slice = ct->time_slice;
+		curr_task = tsk;
+	}
 }
 
 void signal(pid_t pid)
+{
+	task_t* tsk = get_task(pid);
+	if(tsk->state == TSK_Sleeping)
+		tsk->state = TSK_Waiting;
+}
+
+task_t* get_task(pid_t pid)
 {
 	for(uint16_t index = 0; index<SCHEDULER_MAX_TASKS; index++)
 	{
@@ -45,18 +80,19 @@ void signal(pid_t pid)
 		{
 			index+=(uint32_t)tasks[index]-1;
 		}
-		else if(tasks[index]->pid == pid && tasks[index]->state == TSK_Sleeping)
+		else if(tasks[index]->pid == pid)
 		{
-			tasks[index]->state = TSK_Waiting;
-			return;
+			return tasks[index];
 		}
 	}
+	return 0;
 }
 
 void init_scheduler()
 {
 	set_idt_desc(IRQ_OFFSET+0x00, (uint32_t)&schedule_handler, 0, IntGate32, 0x08);
 	set_idt_desc(PROC_EXIT, (uint32_t)&exit_handler, 3, IntGate32, 0x08);
+	set_idt_desc(PROC_YIELD, (uint32_t)&yield_handler, 3, IntGate32, 0x08);
 	//Initialize jump array
 	tasks[0] = (void*)SCHEDULER_MAX_TASKS;
 	curr_task = 0;
@@ -156,11 +192,10 @@ void schedule()
 	schedule_switch_flag=0;
 	uint64_t time_diff = clock_time_diff();
 
-	
 	if(curr_task)
 		curr_task->time_slice -= time_diff;
 	
-	if(!curr_task || curr_task->state == TSK_Terminated || curr_task->time_slice<=0)
+	if(!curr_task || curr_task->state == TSK_Terminated || curr_task->time_slice<=0 || curr_task->state == TSK_Exited)
 	{
 		schedule_switch_flag = 1;					//We want to switch if our current process is done for now
 		curr_task->priority=0;
@@ -180,7 +215,7 @@ void schedule()
 			{
 				if(next_task == 0)
 				{
-					if(curr_task->state == TSK_Terminated)
+					if(curr_task->state == TSK_Terminated || curr_task->state == TSK_Exited)
 					{
 						next_task = kernel_task;
 						schedule_switch_flag = 1;

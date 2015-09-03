@@ -26,6 +26,7 @@ void schedule();
 void __attribute__((noreturn)) schedule_exit();
 pid_t get_current_pid();
 task_t* get_current_task();
+task_t* get_task(pid_t pid);
 
 void print_current_task();
 #endif

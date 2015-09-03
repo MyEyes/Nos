@@ -66,11 +66,25 @@ page_fault_handler:
 	popa
 	jmp resume_task
 	
+.global keyboard_handler
+keyboard_handler:
+	pusha
+	call keyboard_int_handler
+	call acc_interrupt
+	popa
+	iret
+	
 .global exit_handler
 exit_handler:
 	call stop_task
 	call schedule_exit
-	add $4, %esp //Popping eax off of return value
+	add $4, %esp
+	jmp resume_task
+
+.global yield_handler
+yield_handler:
+	call stop_task
+	call yield_to
 	jmp resume_task
 	
 .global kernel_panic_handler
@@ -79,4 +93,3 @@ kernel_panic_handler:
 	str 0x1100
 	call kernel_panic
 	iret
-	

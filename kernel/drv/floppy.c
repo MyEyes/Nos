@@ -184,8 +184,10 @@ int floppy_recalibrate()
 	return -1;
 }
 
-int floppy_read(void* flp_addr, void* buf, size_t num_bytes)
+int floppy_read(void* flp_addr, void* buf, size_t num_bytes, void* dev)
 {	
+	if(num_bytes==0)
+		return 0;
 	chs_addr_t chs_addr = logical_to_chs(flp_addr, chs_info);
 	
 	//Figure out how many bytes at the beginning of the sector we should ignore
@@ -201,12 +203,14 @@ int floppy_read(void* flp_addr, void* buf, size_t num_bytes)
 	if(floppy_read_to_buf(chs_addr, to_read)<0)
 		return -1;
 	
+	//terminal_writeuint32((uint32_t)(floppy_buf+offset));
+	
 	//Copy from floppy buffer to destination
 	memcpy(buf, floppy_buf+offset, to_read-offset);
 	
 	//If we still need to read more, repeat the process
 	if(to_read-offset<num_bytes)
-		return floppy_read(flp_addr + to_read - offset, buf + to_read - offset, num_bytes - to_read + offset);
+		return floppy_read(flp_addr + to_read - offset, buf + to_read - offset, num_bytes - to_read + offset, dev);
 	return 0;
 }
 
@@ -224,6 +228,7 @@ int floppy_read_to_buf(chs_addr_t chs_addr, size_t num_bytes)
 	terminal_writeuint16(chs_addr.head);
 	terminal_writeuint16(chs_addr.cylinder);
 	terminal_writeuint16(chs_addr.sector);
+	terminal_writeuint32(num_bytes);
 	terminal_writestring("\n");
 	*/
 	
@@ -241,9 +246,23 @@ int floppy_read_to_buf(chs_addr_t chs_addr, size_t num_bytes)
 	{
 		if(floppy_issue_command(READ_DATA|OPT_MT|OPT_MF, 8, buffer, 7, result, 1)>=0)
 		{
-			//if there are no errors set in st1
-			if(result[1]==0)
+			
+			/*terminal_writeuint8(result[0]);
+			terminal_writeuint8(result[1]);
+			terminal_writeuint8(result[2]);
+			terminal_writeuint8(result[3]);
+			terminal_writeuint8(result[4]);
+			terminal_writeuint8(result[5]);
+			terminal_writeuint8(result[6]);
+			terminal_writestring("\n");
+			*/
+			
+			
+			//if there are no errors set in st0
+			if((result[0]&0xC0)==0)
+			{
 				return 0;
+			}
 		}
 	}
 	return -1;
@@ -259,13 +278,15 @@ int floppy_setup_dma()
 
 int floppy_set_dma_write()
 {
-	dma_set_mode(DMA_MODE_AUTO|DMA_MODE_TRA0|DMA_MODE_MOD0, floppy_dma_channel);
+	dma_map_to_mem(floppy_buf, floppy_buf_size, floppy_dma_channel);
+	dma_set_mode(DMA_MODE_TRA0|DMA_MODE_MOD0, floppy_dma_channel);
 	return 0;
 }
 
 int floppy_set_dma_read()
 {
-	dma_set_mode(DMA_MODE_AUTO|DMA_MODE_TRA1|DMA_MODE_MOD0, floppy_dma_channel);
+	dma_map_to_mem(floppy_buf, floppy_buf_size, floppy_dma_channel);
+	dma_set_mode(DMA_MODE_TRA1|DMA_MODE_MOD0, floppy_dma_channel);
 	return 0;
 }
 
@@ -274,7 +295,6 @@ extern void (*acc_interrupt)();
 
 int floppy_init()
 {
-	
 	//Check that we support this drive
 	floppy_ver = floppy_version();
 	

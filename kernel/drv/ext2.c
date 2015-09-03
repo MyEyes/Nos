@@ -1,6 +1,7 @@
 #include "ext2.h"
 #include <kalloc.h>
 #include <string.h>
+#include <terminal.h>
 
 ext2_hook_t ext2_create_hook(dev_desc_t* device)
 {
@@ -11,7 +12,7 @@ ext2_hook_t ext2_create_hook(dev_desc_t* device)
 	result.superblock = (ext2_superblock_t*) kalloc(EXT2_SUPERBLOCK_SIZE);
 	result.superblock_ext = (ext2_superblock_ext_t*)(result.superblock + 1);
 	memzero(result.superblock, EXT2_SUPERBLOCK_SIZE); //Zero out memory, so that if superblock_ext doesn't exist we're fine
-	device->read_op(EXT2_SUPERBLOCK_LOC, result.superblock, EXT2_SUPERBLOCK_SIZE);
+	device->read_op(EXT2_SUPERBLOCK_LOC, result.superblock, EXT2_SUPERBLOCK_SIZE, device->dev_struct);
 	
 	result.valid = (result.superblock->ext_sig == EXT2_SIGNATURE);
 	//If this isn't an ext2 partition
@@ -38,7 +39,7 @@ ext2_hook_t ext2_create_hook(dev_desc_t* device)
 	int blockgroup_blocks = (total_blockgroup_size + result.blocksize - 1) / result.blocksize; //Guarantee rounding up
 	
 	result.blk_groups = (ext2_blk_group_desc_t*) kalloc(blockgroup_blocks*result.blocksize);
-	device->read_op(EXT2_SUPERBLOCK_LOC+EXT2_SUPERBLOCK_SIZE, result.blk_groups, blockgroup_blocks*result.blocksize);
+	device->read_op(EXT2_SUPERBLOCK_LOC+EXT2_SUPERBLOCK_SIZE, result.blk_groups, blockgroup_blocks*result.blocksize, device->dev_struct);
 	result.next_buffer = 0;
 	return result;
 }
@@ -55,7 +56,7 @@ int ext2_read_blk(ext2_hook_t* hook, uint32_t blk_id)
 		if(hook->buffer_index[x] == blk_id)
 			return x;
 		
-	if(hook->device->read_op((void*)(blk_id * hook->blocksize), hook->buffer+(hook->next_buffer*hook->blocksize), hook->blocksize)<0)
+	if(hook->device->read_op((void*)(blk_id * hook->blocksize), hook->buffer+(hook->next_buffer*hook->blocksize), hook->blocksize, hook->device->dev_struct)<0)
 		return -1;
 	
 	hook->buffer_index[hook->next_buffer] = blk_id;

@@ -1,6 +1,8 @@
 #include <ipc/port.h>
 #include <ipc/msg.h>
 #include <ipc/ipc.h>
+#include <int.h>
+#include <idt.h>
 #include <paging.h>
 #include <kernel.h>
 #include <stddef.h>
@@ -77,9 +79,20 @@ void* alloc_ipc_res_buffer(size_t sz, uint32_t port)
 	return 0;
 }
 
+int yield_control_to_port(uint32_t port)
+{
+	if(!ipc_initialized)
+		return -1;
+	if(ipc_ports[port].state == IPC_PORT_UNINITIALIZED)
+		return -1;
+	__asm__ ("mov %0, %%eax"::"S"(port):"memory");
+	call_int(PROC_YIELD);
+	return 0;
+}
+
 void free_ipc_res_buffer(void* loc)
 {
-	int id = ((uint32_t)loc-KMEM_IPC_EXCL_LOC)/PAGE_SIZE;
+	int id = ((uint32_t)loc-(uint32_t)ipc_buffer_start)/PAGE_SIZE;
 	if(id<0 || id>=ipc_buffer_pages)
 		return;
 	int val = ipc_res_buffer_map[id];

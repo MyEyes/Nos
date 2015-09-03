@@ -2,6 +2,7 @@
 #define TASK_H
 #include <stdint.h>
 #include <paging.h>
+#include <sys/types.h>
 
 typedef enum
 {
@@ -12,16 +13,18 @@ typedef enum
 	TSK_Exited
 } task_state;
 
-typedef struct
+typedef struct task_s_t
 {
 	uint32_t esp;		//Stack location
 	page_dir_t* cr3;		//Page directory
 	
-	uint16_t pid;		
+	pid_t pid;		
 	uint8_t level;
 	
 	void* ker_mem_start;
 	void* ker_mem_end;
+	
+	struct task_s_t* lender_task;
 	
 	task_state state;
 	

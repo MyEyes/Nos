@@ -1,6 +1,8 @@
 #include <ipc/port.h>
 #include <ipc/msg.h>
 #include <ipc/ipc.h>
+#include <int.h>
+#include <idt.h>
 #include <paging.h>
 #include <kernel.h>
 #include <stddef.h>
@@ -57,11 +59,11 @@ void* alloc_ipc_res_buffer(size_t sz, uint32_t port)
 
 void free_ipc_res_buffer(void* loc)
 {
-	int id = ((uint32_t)loc-KMEM_IPC_EXCL_LOC)/PAGE_SIZE;
+	int id = ((uint32_t)loc-(uint32_t)ipc_buffer_start)/PAGE_SIZE;
 	if(id<0 || id>=ipc_buffer_pages)
 		return;
 	int val = ipc_res_buffer_map[id];
-	if(val==-1)
+	if(val<=0)
 		return;
 	for(; id<ipc_buffer_pages && ipc_res_buffer_map[id]==val; id++)
 		ipc_res_buffer_map[id] = 0;
@@ -87,6 +89,23 @@ ipc_port_t* init_port(uint32_t port, size_t buffersize)
 	}
 	release_lock(&(ipc_ports[port].lock));
 	return 0;
+}
+
+int get_free_port()
+{
+	if(ipc_initialized)
+	{
+		for(int x=1; x<IPC_PORT_MAX; x++)
+		{
+			if(ipc_ports[x].state == IPC_PORT_UNINITIALIZED)
+			{
+				return x;
+			}
+		}
+		return -1;
+	}
+	else
+		return -1;
 }
 
 int open_port(uint32_t port)
@@ -126,6 +145,17 @@ int free_port(uint32_t port)
 		return -1;
 	ipc_ports[port].state = IPC_PORT_UNINITIALIZED;
 	free_ipc_res_buffer(ipc_ports[port].buffer->buffer_base);
+	return 0;
+}
+
+int yield_control_to_port(uint32_t port)
+{
+	if(!ipc_initialized)
+		return -1;
+	if(ipc_ports[port].state == IPC_PORT_UNINITIALIZED)
+		return -1;
+	__asm__ ("mov %0, %%eax"::"S"(port):"memory");
+	call_int(PROC_YIELD);
 	return 0;
 }
 

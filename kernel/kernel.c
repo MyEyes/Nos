@@ -24,9 +24,12 @@
 #include <debug.h>
 #include "drv/terminal_drv.h"
 #include "drv/ext2.h"
+#include "drv/keyboard_drv.h"
 #include <drv/devio.h>
 #include <floppy.h>
 #include <elf.h>
+
+#include "drv/ata.h"
 
 #include <kernel.h>
 
@@ -62,7 +65,10 @@ void kernel_bootstrap()
 void kern_test_floppy_drv()
 {
 	enable_interrupts();
-	floppy_init();
+	int res = floppy_init();
+	
+	if(res<0)
+		print("There was an issue initializing the floppy driver\n");
 	
 	dev_desc_t floppy_desc;
 	floppy_desc.name[0] = 'f';
@@ -71,21 +77,29 @@ void kern_test_floppy_drv()
 	floppy_desc.name[3] = 'p';
 	floppy_desc.name[4] = 'p';
 	floppy_desc.name[5] = 'y';
+	floppy_desc.dev_struct = 0;
 	floppy_desc.read_op = floppy_read;
+	
+	ata_dev_t* ata_dev = ata_init(ATA_PRIMARY_BUS_PORT, ATA_PRIMARY_BUS_DEVICE_CONTROL_PORT, 0, 1024);
+	dev_desc_t ata_desc;
+	ata_desc.name[0] = 'h';
+	ata_desc.name[1] = 'd';
+	ata_desc.name[2] = 'd';
+	ata_desc.name[3] = 0;
+	ata_desc.dev_struct = ata_dev;
+	ata_desc.read_op = ata_read;
 	
 	ext2_hook_t ext2_hook = ext2_create_hook(&floppy_desc);
 	
-	terminal_writestring("\n");
-	terminal_writestring("\n");
 	if(!ext2_hook.valid)
-		terminal_writestring("Not a valid ext2 file system\n");
-	else
-		terminal_writestring("Found valid ext2 file system\n");
+	{
+		print("Not a valid ext2 file system\n");
+	}
 	
 	if(ext2_read_inode(&ext2_hook, 2)<0)
-		terminal_writestring("Error reading root directory\n");
+		print("Error reading root directory\n");
 	
-	char* buffer = (char*) kalloc(1024*4);
+	char* buffer = (char*) kalloc(1024*16);
 	ext2_read_inode_content(&ext2_hook, 2, 0, buffer, 1024);
 	uint16_t offset = 0;
 	int inode = -1;
@@ -93,25 +107,14 @@ void kern_test_floppy_drv()
 	while(offset<1024)
 	{
 		ext2_dir_entry_t* curr_dir = (ext2_dir_entry_t*)(buffer+offset);
-		/*
-		terminal_writeuint16(offset);
-		terminal_writeuint32(curr_dir->inode);
-		terminal_writeuint16(curr_dir->total_size);
-		terminal_writestring_l(&curr_dir->name, curr_dir->name_len);
-		terminal_writestring("\n");
-		*/
-		if(curr_dir->name == 's')
+		if(curr_dir->name == 'c')
 			inode = curr_dir->inode;
 		offset+=curr_dir->total_size;
 	}
-	//terminal_writestring("\n");
-	ext2_read_inode_content(&ext2_hook, inode, 0, buffer, 1024*4);
-	bochs_break();
+	ext2_read_inode_content(&ext2_hook, inode, 0, buffer, 1024*16);
 	task_t* task = elf_create_proc((elf_header_t*)buffer);
-	terminal_writestring("Starting usermode task\n");
-	bochs_break();
+	//print("Starting usermode task\n");
 	scheduler_spawn(task);
-	//schd_task_add(task);
 	
 	uint64_t curr_time = clock_get_time();
 	while(1)
@@ -124,27 +127,20 @@ void kern_test_floppy_drv()
 	}
 }
 
-void kern_test_term_drv()
-{
-	enable_interrupts();
-	print("This is a test!\n");
-	print("If you see this message\n");
-	print("Then rudimentary IPC works\n");
-	while(1);
-}
-
 void kernel_run()
 {
-	terminal_writestring("Hello, kernel World!\n\n");
-	
+	//terminal_writestring("Hello, kernel World!\n\n");
 	set_idt_desc(IRQ_OFFSET+0x01, (uint32_t)&do_nothing_int, 0, IntGate32, 0x8); //Disable keyboard interrupt	
 	
+	//test_ata();
 	start_terminal_drv();
+	keyboard_drv_start();
+	
+	//task_t* ata_test = create_task(per_test, 0, 0, GDT_KERNEL_DATA_SEG, GDT_KERNEL_CODE_SEG, GDT_KERNEL_DATA_SEG, 0);
+	//schd_task_add(ata_test);
 	
 	task_t* floppy_test = create_task(kern_test_floppy_drv, 0, 0, GDT_KERNEL_DATA_SEG, GDT_KERNEL_CODE_SEG, GDT_KERNEL_DATA_SEG, 0);
-	schd_task_add(floppy_test);
-	task_t* term_test = create_task(kern_test_term_drv, 0, 0, GDT_KERNEL_DATA_SEG, GDT_KERNEL_CODE_SEG, GDT_KERNEL_DATA_SEG, 0);
-	scheduler_spawn(term_test);
+	scheduler_spawn(floppy_test);
 	
 	bochs_break();
 	terminal_writestring("Back in the kernel\n\n");
@@ -160,7 +156,7 @@ void kernel_main()
 	kernel_bootstrap();
 	
 	kernel_task = create_task(kernel_run, 0, 0, GDT_KERNEL_DATA_SEG, GDT_KERNEL_CODE_SEG, GDT_KERNEL_DATA_SEG, 0);
-	kernel_task->time_slice = 0x0000F00000000;
+	kernel_task->time_slice = 0xFFFFFF00000000;
 	
 	init_scheduler();
 	scheduler_spawn(kernel_task);

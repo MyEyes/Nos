@@ -29,4 +29,5 @@ cp nos.bin sysroot/boot
 cp sysroot/boot/nos.bin /cygdrive/f/boot/
 cp sysroot/boot/stage2.img /cygdrive/f/boot/
 
+dd conv=notrunc if=ext2.img of=hdd.img
 #cp -R sysroot /cygdrive/f/

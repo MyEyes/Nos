@@ -8,6 +8,16 @@ size_t strlen(const char* str)
 	return ret;
 }
 
+int strcmp(const char* s1, const char* s2)
+{
+	while(*s1++==*s2++)
+	{
+		if(!*s1)
+			return 0;
+	}
+	return *s1-*s2;
+}
+
 void* memcpy(void* trg, const void* src, size_t num)
 {
 	char* dst8 = (char*) trg;

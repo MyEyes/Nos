@@ -3,12 +3,16 @@
 #include <stdarg.h>
 #include <stddef.h>
 #define SEEK_SET 0
+
 typedef struct { int unused; } FILE;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 extern FILE* stderr;
 #define stderr stderr
+
 int fclose(FILE*);
 int fflush(FILE*);
 FILE* fopen(const char*, const char*);
@@ -20,8 +24,15 @@ size_t fwrite(const void*, size_t, size_t, FILE*);
 void setbuf(FILE*, char*);
 int vfprintf(FILE*, const char*, va_list);
 
-int print(char*);
+//Supported
+int printf(const char*, ...);
+int sprintf(char*, const char*, ...);
+int print(const char*);
+int puts(const char*);
+char getc();
+
 #ifdef __cplusplus
 }
 #endif
+
 #endif

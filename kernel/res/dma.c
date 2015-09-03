@@ -2,6 +2,7 @@
 #include <portio.h>
 #include <kernel.h>
 #include <lock.h>
+#include <terminal.h>
 
 lock_t dma_lock;
 
@@ -90,6 +91,7 @@ void dma_mask_chn(uint8_t chn)
 {
 	uint8_t port = dma_get_io_port(DMA_MUL_MASK_REG, chn);
 	uint8_t mask = inb(port);
+	//terminal_writeuint8(port);
 	uint8_t mchn = chn & 0x03;
 	mchn = 1 << mchn;
 	outb(port, mchn|mask);
@@ -120,11 +122,12 @@ void dma_set_mode(dma_mode mode, uint8_t chn)
 void dma_map_to_mem(void* addr, size_t size, uint8_t chn)
 {
 	uint32_t uiaddr = (uint32_t)addr;
-	if(uiaddr<KMEM_DMA_EXCL_LOC || uiaddr+size>KMEM_DMA_EXCL_LIMIT)
+	if(uiaddr < KMEM_DMA_EXCL_LOC || uiaddr + size > KMEM_DMA_EXCL_LIMIT)
 		return;
 	dma_mask_chn(chn);
 	dma_set_addr(addr, chn);
 	dma_set_cnt(size, chn);
+	dma_set_pg_addr(addr, chn);
 	dma_unmask_chn(chn);
 }
 
@@ -133,22 +136,31 @@ void dma_set_addr(void* addr, uint8_t chn)
 	uint32_t uiaddr = (uint32_t)addr;
 	if(uiaddr<KMEM_DMA_EXCL_LOC || uiaddr>KMEM_DMA_EXCL_LIMIT)
 		return;
-	uint8_t addr_low = (uint8_t)uiaddr&0xF;
+	uint8_t addr_low = (uint8_t)uiaddr;
 	uiaddr >>= 8;
 	uint8_t addr_high = (uint8_t)uiaddr;
 	uiaddr >>= 8;
-	uint8_t addr_pg = (uint8_t)uiaddr;
 	uint8_t addr_port = dma_get_io_port(DMA_ADDR_REG, chn);
-	uint16_t addr_pg_port = dma_get_io_port(DMA_PG_ADDR_REG, chn);
 	dma_reset_flipflop(chn);
 	outb(addr_port, addr_low);
 	outb(addr_port, addr_high);
+}
+
+void dma_set_pg_addr(void* addr, uint8_t chn)
+{
+	uint32_t uiaddr = (uint32_t)addr;
+	if(uiaddr<KMEM_DMA_EXCL_LOC || uiaddr>KMEM_DMA_EXCL_LIMIT)
+		return;
+	uiaddr >>= 16;
+	uint8_t addr_pg = (uint8_t)uiaddr;
+	uint16_t addr_pg_port = dma_get_io_port(DMA_PG_ADDR_REG, chn);
 	outb(addr_pg_port, addr_pg);
 }
 
 void dma_set_cnt(size_t size, uint8_t chn)
 {
-	uint8_t size_low = size&0xF;
+	size--;
+	uint8_t size_low = size;
 	uint8_t size_high = size>>8;
 	uint8_t port = dma_get_io_port(DMA_COUNT_REG, chn);
 	dma_reset_flipflop(chn);
