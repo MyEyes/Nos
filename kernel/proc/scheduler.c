@@ -57,11 +57,16 @@ void yield_to()
 	task_t* tsk = get_task(pid);
 	if(tsk)
 	{
+		//terminal_writestring("yielded control from ");
 		task_t* ct = get_current_task();
+		//terminal_writeuint32(ct->pid);
 		tsk->lender_task = ct;
 		tsk->state = TSK_Waiting;
 		tsk->time_slice = ct->time_slice;
 		curr_task = tsk;
+		//terminal_writestring("to ");
+		//terminal_writeuint32(curr_task->pid);
+		//terminal_writestring("\n");
 	}
 }
 
@@ -90,12 +95,18 @@ task_t* get_task(pid_t pid)
 
 void init_scheduler()
 {
-	set_idt_desc(IRQ_OFFSET+0x00, (uint32_t)&schedule_handler, 0, IntGate32, 0x08);
-	set_idt_desc(PROC_EXIT, (uint32_t)&exit_handler, 3, IntGate32, 0x08);
-	set_idt_desc(PROC_YIELD, (uint32_t)&yield_handler, 3, IntGate32, 0x08);
+	terminal_writestring("Initializing scheduler\n");
+	memzero(tasks, sizeof(task_t*)*SCHEDULER_MAX_TASKS);
+	
 	//Initialize jump array
 	tasks[0] = (void*)SCHEDULER_MAX_TASKS;
 	curr_task = 0;
+	next_task = 0;
+	
+	set_idt_desc(IRQ_OFFSET+0x00, (uint32_t)&schedule_handler, 0, IntGate32, 0x08);
+	set_idt_desc(PROC_EXIT, (uint32_t)&exit_handler, 3, IntGate32, 0x08);
+	set_idt_desc(PROC_YIELD, (uint32_t)&yield_handler, 3, IntGate32, 0x08);
+	
 }
 
 void print_current_task()
@@ -189,16 +200,77 @@ void schedule_exit()
 
 void schedule()
 {
+	schedule_switch_flag = 0;
+	uint64_t time_diff = clock_time_diff();
+	
+	if(curr_task)
+	{
+		curr_task->time_slice -= time_diff;
+		terminal_writeprocID(curr_task->pid);
+	}
+	
+	if(!curr_task || curr_task->state == TSK_Terminated || curr_task->time_slice<=0 || curr_task->state == TSK_Exited || curr_task->state == TSK_Sleeping)
+	{
+		schedule_switch_flag = 1;
+	}
+	
+	uint64_t current_prio = 0;
+	next_task = 0;
+	
+	if(schedule_switch_flag)
+	{
+		for(uint16_t index = 1; index<SCHEDULER_MAX_TASKS; index++)
+		{
+			if((uint32_t)tasks[index]<=SCHEDULER_MAX_TASKS)
+			{
+				if(tasks[index])
+					index = (uint32_t)tasks[index]-1;
+				else
+					break;
+			}
+			else if(tasks[index]->state == TSK_Waiting)
+			{
+				tasks[index]->priority += tasks[index]->priority_mod + 1;
+				if(tasks[index]->priority > current_prio)
+				{
+					next_task = tasks[index];
+					current_prio = next_task->priority;
+				}
+			}
+		}
+		if(next_task)
+		{
+			next_task->priority = 0;
+			next_task->time_slice = SCHEDULER_TIMESLICE;
+			curr_task = next_task;
+		}
+		else
+		{
+			next_task = kernel_task;
+			curr_task = next_task;
+		}
+	}
+}
+
+/*
+void schedule()
+{
 	schedule_switch_flag=0;
 	uint64_t time_diff = clock_time_diff();
 
 	if(curr_task)
+	{	
+		//terminal_writeuint64(curr_task->time_slice);
 		curr_task->time_slice -= time_diff;
+		//terminal_writeuint64(curr_task->time_slice);
+	}
 	
 	if(!curr_task || curr_task->state == TSK_Terminated || curr_task->time_slice<=0 || curr_task->state == TSK_Exited)
 	{
 		schedule_switch_flag = 1;					//We want to switch if our current process is done for now
 		curr_task->priority=0;
+		//terminal_writestring("Switching ");
+		//terminal_writeuint32(curr_task->pid);
 	}
 	
 	uint64_t current_prio = 0;
@@ -211,7 +283,8 @@ void schedule()
 			//Go to next entry
 			if(tasks[index])
 				index = (uint32_t)tasks[index]-1;
-			else
+			//If there is no next entry we get ready to switch
+			else if(schedule_switch_flag)
 			{
 				if(next_task == 0)
 				{
@@ -223,9 +296,11 @@ void schedule()
 					else
 						schedule_switch_flag=0;
 				}
-				else
+				else if(next_task!=curr_task)
 				{
-					next_task->time_slice = next_task->priority*100;
+					next_task->time_slice = next_task->priority;
+					//terminal_writeuint32(next_task->pid);
+					//terminal_writeuint64(next_task->time_slice);
 					next_task->priority=0;
 					curr_task = next_task;
 				}
@@ -249,3 +324,4 @@ void schedule()
 		}
 	}
 }
+*/

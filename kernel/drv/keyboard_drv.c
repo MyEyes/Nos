@@ -100,7 +100,7 @@ void keyboard_setkeymap()
 	key_map.scantokey[0x17] = 'i';
 	key_map.scantokey[0x18] = 'o';
 	key_map.scantokey[0x19] = 'p';
-	key_map.scantokey[0x1a] = 'ü';
+	key_map.scantokey[0x1a] = '/';
 	key_map.scantokey[0x1b] = '+';
 	key_map.scantokey[0x1c] = '\n';
 	key_map.scantokey[0x1e] = 'a';
@@ -159,6 +159,8 @@ void keyboard_read_pressed(unsigned char c)
 	//If alphabetical character and shift is pressed
 	if(character>=97 && character<=122 && keys.key[15] == KEYBOARD_KEY_DOWN)
 		character -= 32;
+	if(character=='\n')
+		bochs_break();
 	keyboard_add_char_to_buffer(character);
 }
 

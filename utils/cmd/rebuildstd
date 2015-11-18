@@ -1,0 +1,5 @@
+cd ..
+cd ..
+cd std
+make
+make install

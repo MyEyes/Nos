@@ -113,14 +113,22 @@ task_t* create_task(void (*entry)(), void* memstart, void* memend,uint16_t ss, u
 	task_context_t* stack = (task_context_t*)(new_task->esp-sizeof(task_context_t));
 	memzero((void*)stack, sizeof(stack));
 	stack->ss = ss;
-	if(new_task->level != 0)
-		stack->flags = 512;
+	
+	//We only want to use memend as an indicator for esp and ebx if we
+	//Aren't running in the kernel
+	if(new_task->level == 0)
+	{
+		stack->flags = 0;		
+		stack->esp = (uint32_t) stack;
+	}
 	else
-		stack->flags = 0;
-	//Create Stack in second to last memory page
-	stack->esp = (((uint32_t)memend + PAGE_SIZE - 1)&0xFFFFF000)+PAGE_SIZE-1;
-	//Create Heap growing the other way in page after that
-	stack->ebx = (((uint32_t)memend + PAGE_SIZE - 1)&0xFFFFF000)+PAGE_SIZE;
+	{
+		stack->flags = 512;
+		//Create Stack in second to last memory page
+		stack->esp = (((uint32_t)memend + PAGE_SIZE - 1)&0xFFFFF000)+PAGE_SIZE-1;
+		//Create Heap growing the other way in page after that
+		stack->ebx = (((uint32_t)memend + PAGE_SIZE - 1)&0xFFFFF000)+PAGE_SIZE;
+	}
 	
 	stack->eax = new_task->pid;
 	stack->cs = cs;
@@ -139,9 +147,9 @@ void task_print(task_t* task)
 {
 	terminal_writestring("Task: ");
 	terminal_writeuint16(task->pid);
-	terminal_writeuint32((uint32_t)task->entry);
 	
 	task_context_t* stack = (task_context_t*)(task->esp);
+	terminal_writeuint32((uint32_t)stack->entry);
 	terminal_writestring("CR3: ");
 	terminal_writeuint32((uint32_t)task->cr3);
 	terminal_writestring("\n");

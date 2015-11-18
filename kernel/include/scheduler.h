@@ -3,6 +3,7 @@
 #include <task.h>
 #include <sys/types.h>
 #define SCHEDULER_MAX_TASKS 256
+#define SCHEDULER_TIMESLICE 0x2000000000
 
 typedef struct task_list_st task_list_t;
 struct task_list_st

@@ -176,6 +176,37 @@ int ata_copy_from_buf(ata_dev_t* device, uint16_t offset)
 	return 0;
 }
 
+int ata_write(void* ladr, void* src_buf, size_t num_bytes, void* ata_dev)
+{
+	ata_dev_t* device = (ata_dev_t*) ata_dev;
+	long unsigned int lba = (uint32_t)ladr / ATA_BLOCK_SIZE;
+	size_t remainder = (uint32_t)ladr - lba * ATA_BLOCK_SIZE;
+	size_t num_blocks = (num_bytes+remainder+ATA_BLOCK_SIZE-1)/ATA_BLOCK_SIZE; //Round up
+	
+	for(unsigned int x=0; x<num_blocks; x++)
+	{
+		unsigned int cpyBytes = ATA_BLOCK_SIZE-remainder;
+		if(num_bytes < cpyBytes)
+			cpyBytes = num_bytes;
+		
+		//If we aren't overwriting all bytes in this block
+		//We read it first
+		if(cpyBytes!=ATA_BLOCK_SIZE)
+			if(ata_read_to_buf(lba+x, 1, device)<0)
+				return -1;
+		//Copy the bytes from the source buffer into the ata buffer
+		memcpy(device->buffer+remainder, src_buf, cpyBytes);
+		//Write buffer to correct block on drive
+		if(ata_write_from_buf(lba+x, 1, device)<0)
+			return -1;
+		
+		src_buf += cpyBytes;
+		num_bytes -= cpyBytes;
+		remainder = 0;
+	}
+	return 0;
+}
+
 int ata_wait_busy(ata_dev_t* device)
 {
 	//Wait for drive to be ready or error

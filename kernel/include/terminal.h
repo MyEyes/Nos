@@ -35,6 +35,7 @@ void terminal_writestring(const char* data);
 void terminal_writestring_l(const char* data, uint8_t max_length);
 void terminal_writeuint8(const uint8_t data);
 void terminal_writeuint16(const uint16_t data);
+void terminal_writeprocID(const uint16_t data);
 void terminal_writeuint32(const uint32_t data);
 void terminal_writeuint64(const uint64_t data);
 void terminal_print_backspace();

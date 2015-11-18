@@ -15,3 +15,6 @@ CMD_FILES := $(CMD_C_FILES)
 
 all: $(CMD_FILES)
 	$(CC) $? $(CFLAGS) -o cmd
+	
+install:
+	cp cmd /cygdrive/f/

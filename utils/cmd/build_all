@@ -1,0 +1,9 @@
+cd ..
+cd ..
+./boot_make.sh
+cd std
+make
+make install
+cd ../utils/cmd
+make
+make install

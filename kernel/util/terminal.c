@@ -36,7 +36,7 @@ void terminal_initialize()
 		}
 	}
 }
- 
+
 void terminal_setcolor(uint8_t color)
 {
 	terminal_color = color;
@@ -141,6 +141,17 @@ void terminal_writeuint16(const uint16_t data)
 	terminal_writebyte(p[1]);
 	terminal_writebyte(p[0]);
 	terminal_writestring(" ");
+}
+
+void terminal_writeprocID(const uint16_t id)
+{
+	size_t t_row = terminal_row;
+	size_t t_column = terminal_column;
+	terminal_row = 0;
+	terminal_column = 75;
+	terminal_writeuint16(id);
+	terminal_row = t_row;
+	terminal_column = t_column;
 }
 
 void terminal_writeuint32(const uint32_t data)

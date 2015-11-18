@@ -4,24 +4,37 @@
 #include <string.h>
 #include "cmd.h"
 #include "command.h"
+#include <debug.h>
 
 char input_buffer[MAX_CMD_LENGTH];
 int input_buffer_pos;
-#define nCmds 1
+#define nCmds 5
 command_t cmds[nCmds];
+char term = 0;
 
 int main(int argc, char** argv)
 {
-	print("Welcome to the Nos command line!\n\n");
+	//Avoid warnings
+	argc=argc;
+	argv=argv;
+	
+	print("Welcome to the Nos command line!\n");
 	
 	SET_COMMAND(0,"exit", cmd_exit);
-	while(!get_command()) ;
+	SET_COMMAND(1,"echo", cmd_echo);
+	SET_COMMAND(2,"crash", cmd_crash);
+	SET_COMMAND(3,"getfile", cmd_getfile);
+	SET_COMMAND(4,"cd", cmd_cd);
+	bochs_break();
+	while(!term)
+		get_command();
 	return 0;
 }
 
 int get_command()
 {
 	input_buffer_pos = 0;
+	print("\n");
 	char outbuf[2];
 	outbuf[1] = 0;
 	outbuf[0] = '>';
@@ -38,14 +51,14 @@ int get_command()
 				printf(outbuf);
 				input_buffer[input_buffer_pos--] = 0;
 			}
-			else if(c=='\n')
+			else if(c=='\n' && input_buffer_pos<MAX_CMD_LENGTH-1)
 			{
 				outbuf[0]=c;
 				printf(outbuf);
 				input_buffer[input_buffer_pos] = 0;
 				return proc_cmd();
 			}
-			else if(c>=32 && input_buffer_pos<MAX_CMD_LENGTH-1)
+			else if(c>=32 && input_buffer_pos<MAX_CMD_LENGTH-2)
 			{
 				input_buffer[input_buffer_pos++] = c;
 				outbuf[0]=c;
@@ -74,7 +87,7 @@ int proc_cmd()
 			return res;
 		}
 	}
-	printf("Command %s not found!\n", cmd_args[0]);
+	printf("Command %s not found!", cmd_args[0]);
 	free(cmd_args);
 	return 0;
 }
@@ -127,5 +140,65 @@ int param_split(char* input, char*** args)
 
 int cmd_exit(int nargs, char** vargs)
 {
-	return -1;
+	//Avoid warnings
+	nargs=nargs;
+	vargs=vargs;
+	
+	term = 1;
+	return 0;
+}
+
+int cmd_echo(int nargs, char** vargs)
+{
+	
+	for(int x=0; x<nargs; x++)
+	{
+		printf("%s ", vargs[x]);
+	}
+	return 0;
+}
+
+int cmd_crash(int nargs, char** vargs)
+{
+	//Avoid warnings
+	nargs=nargs;
+	vargs=vargs;
+	
+	*((char*)0)=0;
+	return 0;
+}
+
+int cmd_getfile(int nargs, char** vargs)
+{
+	if(nargs!=1)
+	{
+		printf("Invalid number of arguments %d", nargs);
+		return 0;
+	}
+	FILE* file = fopen(*vargs, "");
+	if(file)
+		printf("inode: %d\ntype:  %d\n", file->handle, file->type);
+	else
+		printf("Couldn't find inode for %s\n", *vargs);
+	return 0;
+}
+
+int cmd_cd(int nargs, char** vargs)
+{
+	if(nargs!=1)
+	{
+		printf("Invalid number of arguments %d", nargs);
+		return 0;
+	}
+	FILE* file = fopen(*vargs, "");
+	if(file)
+	{
+		if(file->type==FILE_TYPE_DIR)
+			set_dir(file);
+		else
+			printf("%s is not a directory\n", *vargs);
+	}
+	else
+		printf("Couldn't find inode for %s\n", *vargs);
+	return 0;
 }

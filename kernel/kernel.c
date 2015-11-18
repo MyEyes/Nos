@@ -25,11 +25,14 @@
 #include "drv/terminal_drv.h"
 #include "drv/ext2.h"
 #include "drv/keyboard_drv.h"
+#include "drv/ext2_fs_drv.h"
 #include <drv/devio.h>
 #include <floppy.h>
 #include <elf.h>
 
 #include "drv/ata.h"
+
+#include <unistd.h>
 
 #include <kernel.h>
 
@@ -88,8 +91,13 @@ void kern_test_floppy_drv()
 	ata_desc.name[3] = 0;
 	ata_desc.dev_struct = ata_dev;
 	ata_desc.read_op = ata_read;
+	ata_desc.write_op = ata_write;
+	ata_desc = ata_desc;
 	
-	ext2_hook_t ext2_hook = ext2_create_hook(&floppy_desc);
+	ext2_hook_t ext2_hook = ext2_create_hook(&ata_desc);
+	ext2_create_empty_dir(&ext2_hook, 2, "test");
+	
+	ext2_fs_init(ata_desc);
 	
 	if(!ext2_hook.valid)
 	{
@@ -107,10 +115,11 @@ void kern_test_floppy_drv()
 	while(offset<1024)
 	{
 		ext2_dir_entry_t* curr_dir = (ext2_dir_entry_t*)(buffer+offset);
-		if(curr_dir->name == 'c')
+		if(*curr_dir->name == 'c')
 			inode = curr_dir->inode;
 		offset+=curr_dir->total_size;
 	}
+	
 	ext2_read_inode_content(&ext2_hook, inode, 0, buffer, 1024*16);
 	task_t* task = elf_create_proc((elf_header_t*)buffer);
 	//print("Starting usermode task\n");
@@ -119,6 +128,7 @@ void kern_test_floppy_drv()
 	uint64_t curr_time = clock_get_time();
 	while(1)
 	{
+		sleep();
 		uint64_t ct = clock_get_time();
 		if(ct-curr_time>0x40000000000)
 		{

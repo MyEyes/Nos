@@ -2,11 +2,20 @@
 #include <memory.h>
 #include <ipc/ipc.h>
 #include <string.h>
+#include <stdio.h>
+
+extern FILE root_file;
+extern FILE curr_dir;
 
 void std_init()
 {
 	init_ipc();
 	mem_init();
+	
+	//Set first FILE to 2 to be root directory
+	root_file.handle = 2;
+	root_file.type = FILE_TYPE_DIR;
+	curr_dir = root_file;
 }
 
 extern void (*_fini)();

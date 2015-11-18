@@ -41,6 +41,7 @@ int ata_read_to_buf(long unsigned int, size_t, ata_dev_t*);
 int ata_copy_to_buf(ata_dev_t*, uint16_t);
 int ata_write_from_buf(long unsigned int,size_t, ata_dev_t*);
 int ata_copy_from_buf(ata_dev_t*, uint16_t);
+int ata_write(void*, void*, size_t, void*);
 int ata_select_device(ata_dev_t*);
 int ata_wait_busy(ata_dev_t*);
 

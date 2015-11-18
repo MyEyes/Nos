@@ -16,7 +16,9 @@ mem_seg_t* mem_get_free_seg(size_t size)
 	mem_seg_t* curr = base_seg;
 	do
 	{
-		if(curr->size >= size + sizeof(mem_seg_t) && curr->free)
+		//there must be enough space left to house both the allocating segments
+		//entry and the newly created segments entry
+		if(curr->size >= size + sizeof(mem_seg_t)*2 && curr->free)
 		{
 			return curr;
 		}
@@ -28,11 +30,11 @@ mem_seg_t* mem_get_free_seg(size_t size)
 void mem_split_seg(mem_seg_t* seg, size_t size)
 {
 	//Check that we have enough space
-	if(seg->size<size+sizeof(mem_seg_t))
+	if(seg->size<size+sizeof(mem_seg_t)*2)
 		return;
 	
 	//How much is remaining for the second part of this segment
-	int remainder = seg->size - size;
+	int remainder = seg->size - size - sizeof(mem_seg_t);
 	//Set this segment to the new size
 	seg->size = size + sizeof(mem_seg_t);
 	
@@ -44,9 +46,10 @@ void mem_split_seg(mem_seg_t* seg, size_t size)
 	
 		seg->next = (mem_seg_t*)((void*)seg+seg->size);
 	
-		seg->next->next = next;
 		if(next)
 			next->prev = seg->next;
+		
+		seg->next->next = next;
 		seg->next->prev = seg;
 		seg->next->size = remainder;
 		seg->next->free = seg->free;
@@ -93,17 +96,22 @@ void mem_try_merge_seg(mem_seg_t* seg)
 	if(!seg->free)
 		return;
 	
-	//If the previous segment is free we merge them
+	//If the previous segment exists and is free we merge them
 	if(seg->prev && seg->prev->free)
 	{
 		seg->prev->size += seg->size;
 		seg->prev->next = seg->next;
 		seg = seg->prev;
+		if(seg->next)
+			seg->next->prev = seg;
 	}
+	
 	//If the next segment is free we merge them
 	if(seg->next && seg->next->free)
 	{
 		seg->size += seg->next->size;
 		seg->next = seg->next->next;
+		if(seg->next)
+			seg->next->prev = seg;
 	}
 }

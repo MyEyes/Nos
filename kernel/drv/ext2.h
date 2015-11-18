@@ -8,7 +8,14 @@
 #define EXT2_SUPERBLOCK_SIZE 0x400
 #define EXT2_SUPERBLOCK_LOC ((void*)0x400)
 #define EXT2_BLOCK_BUFFER_SIZE 12
-//#define EXT2_SUPERBLOCK_LOC ((void*)0x32400)
+
+#define EXT2_TYPE_DIR 0x4000
+#define EXT2_TYPE_FILE 0x8000
+
+#define EXT2_FT_REG_FILE 1
+#define EXT2_FT_DIR 2
+
+#define EXT2_MAX_FILENAME 255
 
 typedef struct
 {
@@ -115,7 +122,7 @@ typedef struct
 	uint16_t total_size;
 	uint8_t name_len;
 	uint8_t type;
-	char	name;
+	char	name[];
 } ext2_dir_entry_t;
 
 typedef enum
@@ -165,11 +172,15 @@ typedef struct
 	uint16_t buffer_index[EXT2_BLOCK_BUFFER_SIZE];
 	char* buffer;
 	
+	uint32_t num_blk_groups;
+	uint32_t blockgroup_blocks;
+	
 	uint32_t blocksize;
 	uint16_t inode_size;
 	
 	uint32_t curr_inode;
 	ext2_inode_t* inode_buffer;
+	
 	
 	ext2_superblock_t* superblock;
 	ext2_superblock_ext_t* superblock_ext;
@@ -177,8 +188,33 @@ typedef struct
 } ext2_hook_t;
 
 ext2_hook_t ext2_create_hook(dev_desc_t*);
+
 int ext2_read_inode(ext2_hook_t*, uint32_t);
+int ext2_write_inode(ext2_hook_t*, uint32_t, ext2_inode_t*);
+
 int ext2_read_blk(ext2_hook_t*, uint32_t);
+int ext2_write_blk(ext2_hook_t*, uint32_t, char*);
+
 int ext2_read_inode_blk(ext2_hook_t*, uint32_t, uint32_t);
+int ext2_write_inode_blk(ext2_hook_t*, uint32_t, uint32_t, char*);
 int ext2_read_inode_content(ext2_hook_t*, uint32_t, uint32_t, void*, size_t);
+
+int ext2_add_inode_to_dir(ext2_hook_t*, uint32_t, uint32_t, uint8_t, char*);
+uint32_t ext2_create_empty_dir(ext2_hook_t*, uint32_t, char*);
+uint32_t ext2_create_empty_file(ext2_hook_t*, uint32_t, char*);
+
+uint32_t ext2_add_blk_to_inode(ext2_hook_t*, uint32_t, uint32_t);
+uint32_t ext2_get_inode_blk(ext2_hook_t*, uint32_t, uint32_t);
+int ext2_set_inode_blk(ext2_hook_t*, uint32_t, uint32_t, uint32_t);
+
+uint32_t ext2_get_free_inode(ext2_hook_t*);
+int ext2_mark_inode_used(ext2_hook_t*, uint32_t);
+int ext2_mark_inode_unused(ext2_hook_t*, uint32_t);
+
+uint32_t ext2_get_free_block(ext2_hook_t*);
+int ext2_mark_block_used(ext2_hook_t*, uint32_t);
+int ext2_mark_block_unused(ext2_hook_t*, uint32_t);
+
+int ext2_write_info(ext2_hook_t*);
+
 #endif
