@@ -1,5 +1,6 @@
 #ifndef TASK_H
 #define TASK_H
+#include <lock.h>
 #include <stdint.h>
 #include <paging.h>
 #include <sys/types.h>
@@ -24,7 +25,12 @@ typedef struct task_s_t
 	void* ker_mem_start;
 	void* ker_mem_end;
 	
+	//Remembers if we are running on lended time through a yield call
+	//If we do and go to sleep we immediately return control to lending task
+	//without scheduling
 	struct task_s_t* lender_task;
+	
+	lock_t* waiting_on;
 	
 	task_state state;
 	

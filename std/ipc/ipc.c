@@ -154,7 +154,8 @@ int yield_control_to_port(uint32_t port)
 		return -1;
 	if(ipc_ports[port].state == IPC_PORT_UNINITIALIZED)
 		return -1;
-	__asm__ ("mov %0, %%eax"::"S"(port):"memory");
+	//Can fiddle with eax, because calling convention returns value in eax immediately afterwards.
+	__asm__ ("mov %0, %%eax"::"S"(port):"memory","eax");
 	call_int(PROC_YIELD);
 	return 0;
 }

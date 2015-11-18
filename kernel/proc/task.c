@@ -97,6 +97,7 @@ task_t* create_task(void (*entry)(), void* memstart, void* memend,uint16_t ss, u
 	new_task->priority = 0;
 	new_task->priority_mod = priority;
 	new_task->time_slice=0;
+	new_task->waiting_on=0;
 	new_task->pid = pid_counter++;
 	new_task->state = TSK_Waiting;
 	

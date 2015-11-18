@@ -54,6 +54,15 @@ void yield_to()
 {
 	task_context_t* stack = (task_context_t*)(curr_task->esp);
 	int pid = stack->eax;
+	//If we call yield with a target pid of 0 we just want to pass on control, so we sleep and schedule
+	if(pid==0 || pid>SCHEDULER_MAX_TASKS)
+	{
+		curr_task->waiting_on = (lock_t*)pid;
+		curr_task->state = TSK_Sleeping;
+		//terminal_writestring("Making process sleep\n");
+		schedule();
+		return;
+	}
 	task_t* tsk = get_task(pid);
 	if(tsk)
 	{
@@ -227,6 +236,13 @@ void schedule()
 					index = (uint32_t)tasks[index]-1;
 				else
 					break;
+			}
+			//If we are asleep and waiting on a lock that has been freed
+			//we set the process to waiting and decrement index so on the next loop it gets processed properly
+			else if(tasks[index]->state == TSK_Sleeping && tasks[index]->waiting_on && tasks[index]->waiting_on->locked == 0)
+			{
+				tasks[index]->state = TSK_Waiting;
+				index--;
 			}
 			else if(tasks[index]->state == TSK_Waiting)
 			{
